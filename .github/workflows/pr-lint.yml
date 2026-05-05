@@ -3,10 +3,9 @@ name: PR Lint
 
 on:
   push:
-    branches-ignore: [master, main]
-    # Remove the line above to run when pushing to master
+    branches-ignore: [ master, main ]
   pull_request:
-    branches: [master, main]
+    branches: [ master, main ]
 
 permissions:
   contents: read
@@ -14,5 +13,7 @@ permissions:
   statuses: write
 
 jobs:
-  SuperLinter:
-    uses: ivuorinen/actions/pr-lint@main
+  Lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ivuorinen/actions/pr-lint@84380fe01733b915ffea5892083ee636ed2b765a # v2026.05.04
