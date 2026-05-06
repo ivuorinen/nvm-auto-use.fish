@@ -3,12 +3,12 @@ function nvm_security -d "Security validation and vulnerability checking"
 
     switch $action
         case check_version
-            set -l version $argv[2]
-            _nvm_security_validate_version "$version"
+            set -l node_version $argv[2]
+            _nvm_security_validate_version "$node_version"
 
         case check_cve
-            set -l version $argv[2]
-            _nvm_security_check_vulnerabilities "$version"
+            set -l node_version $argv[2]
+            _nvm_security_check_vulnerabilities "$node_version"
 
         case validate_source
             set -l source $argv[2]
@@ -28,28 +28,28 @@ function nvm_security -d "Security validation and vulnerability checking"
 end
 
 function _nvm_security_validate_version -d "Validate version string format and safety"
-    set -l version $argv[1]
+    set -l node_version $argv[1]
 
     # Remove leading 'v' if present
-    set version (string replace -r '^v' '' "$version")
+    set node_version (string replace -r '^v' '' "$node_version")
 
     # Check for valid semver format
-    if not string match -qr '^\d+\.\d+\.\d+' "$version"
-        echo "⚠️  Invalid version format: $version" >&2
+    if not string match -qr '^\d+\.\d+\.\d+' "$node_version"
+        echo "⚠️  Invalid version format: $node_version" >&2
         return 1
     end
 
     # Check for suspicious characters
-    if string match -qr '[;&|`$(){}[\]<>]' "$version"
-        echo "🚨 Suspicious characters in version: $version" >&2
+    if string match -qr '[;&|`$(){}[\]<>]' "$node_version"
+        echo "🚨 Suspicious characters in version: $node_version" >&2
         return 1
     end
 
     # Check against minimum supported version
     set -l min_version (nvm_security policy get min_version)
     if test -n "$min_version"
-        if _nvm_security_version_compare "$version" "$min_version" -lt
-            echo "⚠️  Version $version is below minimum required ($min_version)" >&2
+        if _nvm_security_version_compare "$node_version" "$min_version" -lt
+            echo "⚠️  Version $node_version is below minimum required ($min_version)" >&2
             return 1
         end
     end
@@ -57,8 +57,8 @@ function _nvm_security_validate_version -d "Validate version string format and s
     # Check against maximum allowed version
     set -l max_version (nvm_security policy get max_version)
     if test -n "$max_version"
-        if _nvm_security_version_compare "$version" "$max_version" -gt
-            echo "⚠️  Version $version is above maximum allowed ($max_version)" >&2
+        if _nvm_security_version_compare "$node_version" "$max_version" -gt
+            echo "⚠️  Version $node_version is above maximum allowed ($max_version)" >&2
             return 1
         end
     end
@@ -67,18 +67,18 @@ function _nvm_security_validate_version -d "Validate version string format and s
 end
 
 function _nvm_security_check_vulnerabilities -d "Check version for known vulnerabilities"
-    set -l version $argv[1]
+    set -l node_version $argv[1]
 
     # Cache key for CVE data
-    set -l cache_key "cve_check_$(echo $version | shasum | cut -d' ' -f1)"
+    set -l cache_key "cve_check_"(_nvm_security_hash "$node_version")
 
     # Check cache first (24 hour TTL)
     if set -l cached_result (nvm_cache get "$cache_key" 86400)
         if test "$cached_result" = vulnerable
-            echo "🚨 Version $version has known vulnerabilities (cached)" >&2
+            echo "🚨 Version $node_version has known vulnerabilities (cached)" >&2
             return 1
         else if test "$cached_result" = safe
-            echo "✅ Version $version appears safe (cached)" >&2
+            echo "✅ Version $node_version appears safe (cached)" >&2
             return 0
         end
     end
@@ -92,15 +92,15 @@ function _nvm_security_check_vulnerabilities -d "Check version for known vulnera
         18.1.0
     "
 
-    if string match -q "*$version*" "$vulnerable_versions"
-        echo "🚨 Version $version has known vulnerabilities" >&2
+    if string match -q "*$node_version*" "$vulnerable_versions"
+        echo "🚨 Version $node_version has known vulnerabilities" >&2
         nvm_cache set "$cache_key" vulnerable
         return 1
     end
 
     # Try online CVE check if available
     if command -q curl
-        _nvm_security_online_cve_check "$version" "$cache_key"
+        _nvm_security_online_cve_check "$node_version" "$cache_key"
     else
         echo "ℹ️  Cannot perform online CVE check (curl not available)" >&2
         nvm_cache set "$cache_key" unknown
@@ -109,27 +109,25 @@ function _nvm_security_check_vulnerabilities -d "Check version for known vulnera
 end
 
 function _nvm_security_online_cve_check -d "Perform online CVE check"
-    set -l version $argv[1]
+    set -l node_version $argv[1]
     set -l cache_key $argv[2]
 
-    # Background job for CVE checking to avoid blocking
-    fish -c "
-        set cve_result (curl -s --max-time 5 'https://nodejs.org/en/about/security/' 2>/dev/null)
-        if test \$status -eq 0
-            if echo \"\$cve_result\" | grep -qi '$version'
-                nvm_cache set '$cache_key' 'vulnerable'
-                echo '🚨 Version $version found in security advisories' >&2
-            else
-                nvm_cache set '$cache_key' 'safe'
-                echo '✅ Version $version appears safe' >&2
-            end
+    set -l cve_result (curl -fsSL --max-time 5 'https://nodejs.org/en/about/security/' 2>/dev/null)
+    if test $status -eq 0
+        if echo "$cve_result" | grep -qi "$node_version"
+            nvm_cache set "$cache_key" vulnerable
+            echo "🚨 Version $node_version found in security advisories" >&2
+            return 1
         else
-            nvm_cache set '$cache_key' 'unknown'
-            echo 'ℹ️  Unable to verify security status online' >&2
+            nvm_cache set "$cache_key" safe
+            echo "✅ Version $node_version appears safe" >&2
+            return 0
         end
-    " &
-
-    return 0
+    else
+        nvm_cache set "$cache_key" unknown
+        echo "ℹ️  Unable to verify security status online" >&2
+        return 0
+    end
 end
 
 function _nvm_security_validate_source -d "Validate version file source"
@@ -249,8 +247,8 @@ function _nvm_security_version_compare -d "Compare semantic versions"
     set -l operator $argv[3]
 
     # Simple semver comparison
-    set -l v1_parts (string split '.' "$version1")
-    set -l v2_parts (string split '.' "$version2")
+    set -l v1_parts (string split '.' "$node_version1")
+    set -l v2_parts (string split '.' "$node_version2")
 
     for i in (seq 1 3)
         set -l v1_part (echo $v1_parts[$i] | string replace -r '[^0-9].*' '')
@@ -275,4 +273,18 @@ function _nvm_security_version_compare -d "Compare semantic versions"
     # Versions are equal
     test "$operator" = -eq
     return $status
+end
+
+function _nvm_security_hash -d "Hash a string with the first available hasher"
+    set -l input $argv[1]
+    if type -q shasum
+        echo $input | shasum | cut -d' ' -f1
+    else if type -q sha1sum
+        echo $input | sha1sum | cut -d' ' -f1
+    else if type -q md5sum
+        echo $input | md5sum | cut -d' ' -f1
+    else
+        # Fallback: sanitize input for use as cache key
+        echo $input | string replace -ar '[^a-zA-Z0-9]' _
+    end
 end

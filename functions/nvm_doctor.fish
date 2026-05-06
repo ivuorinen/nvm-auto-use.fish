@@ -199,9 +199,9 @@ function _nvm_doctor_check_permissions -d "Check file and directory permissions"
         # Check individual function files
         for func_file in "$functions_dir"/nvm_*.fish
             if test -r "$func_file"
-                echo "   ✅ $(basename $func_file) readable"
+                echo "   ✅ "(basename $func_file)" readable"
             else
-                echo "   ❌ $(basename $func_file) not readable"
+                echo "   ❌ "(basename $func_file)" not readable"
                 set issues (math "$issues + 1")
             end
         end
@@ -259,7 +259,7 @@ function _nvm_doctor_check_config -d "Validate configuration"
     # Check debounce setting
     set -l debounce (_nvm_auto_use_get_debounce 2>/dev/null)
     if test -n "$debounce"
-        echo "   ✅ Debounce: ${debounce}ms"
+        echo "   ✅ Debounce: "$debounce"ms"
     else
         echo "   ℹ️  Debounce: Default (500ms)"
     end
@@ -315,9 +315,9 @@ function _nvm_doctor_check_cache -d "Check cache status and health"
 
         for cache_file in $cache_files
             if test -s "$cache_file"
-                echo "   ✅ $(basename $cache_file) valid"
+                echo "   ✅ "(basename $cache_file)" valid"
             else
-                echo "   ⚠️  $(basename $cache_file) empty (may be normal)"
+                echo "   ⚠️  "(basename $cache_file)" empty (may be normal)"
             end
         end
 

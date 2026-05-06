@@ -46,9 +46,8 @@ function test_is_excluded_dir
 
     set -g _nvm_auto_use_excluded_dirs testdir
     set -l orig_pwd (pwd)
-    cd /
-    mkdir -p testdir
-    cd testdir
+    mkdir -p "$TEST_DIR/testdir"
+    cd "$TEST_DIR/testdir"
 
     set result (_nvm_auto_use_is_excluded_dir)
     assert_equals "$result" "" "Excluded directory detected"

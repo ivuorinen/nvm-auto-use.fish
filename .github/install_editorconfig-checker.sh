@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 echo "Downloading editorconfig-checker..."
 
@@ -26,7 +26,7 @@ esac
 TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
-curl -L "$URL" | tar -xz -C "$TMPDIR"
+curl -fsSL "$URL" | tar -xz -C "$TMPDIR"
 
 # Choose install directory
 INSTALL_DIR="${XDG_BIN_HOME:-$HOME/bin}"

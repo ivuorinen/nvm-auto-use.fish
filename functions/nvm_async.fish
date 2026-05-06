@@ -34,8 +34,8 @@ function _nvm_async_version_check -d "Async version check operation"
         end
     " &
 
-    # Return job ID for potential cleanup
-    jobs -l | tail -n 1 | grep -o '[0-9]*'
+    # Return PID of the background job
+    echo $last_pid
 end
 
 function _nvm_async_manager_check -d "Async manager availability check"
@@ -59,13 +59,13 @@ function _nvm_async_manager_check -d "Async manager availability check"
         end
     " &
 
-    jobs -l | tail -n 1 | grep -o '[0-9]*'
+    echo $last_pid
 end
 
 function _nvm_async_cleanup -d "Clean up completed background jobs"
     for job in (jobs -p)
         if not kill -0 $job 2>/dev/null
-            jobs -p | grep -v $job
+            wait $job 2>/dev/null
         end
     end
 end

@@ -99,9 +99,9 @@ function _nvm_cache_stats -d "Show cache statistics"
 end
 
 function _nvm_cache_key -d "Generate cache key from directory and file"
-    set -l dir (pwd)
+    set -l dir_hash (pwd | shasum | cut -d' ' -f1)
     set -l file_hash (echo "$argv[1]" | shasum | cut -d' ' -f1)
-    echo "dir_$(echo "$dir" | shasum | cut -d' ' -f1)_$file_hash"
+    echo "dir_"$dir_hash"_"$file_hash
 end
 
 function _nvm_cache_manager_key -d "Generate cache key for manager availability"

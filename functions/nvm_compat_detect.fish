@@ -20,50 +20,48 @@ function nvm_compat_detect -d "Detect available Node.js version managers"
     end
 
     if test (count $managers) -eq 0
-        echo "No supported Node.js version managers found"
         return 1
     end
 
-    echo "Available managers:" (string join ", " $managers)
     echo $managers
 end
 
-function nvm_compat_use -a manager version -d "Use specified version with detected manager"
-    if test -z "$manager" -o -z "$version"
+function nvm_compat_use -a manager node_version -d "Use specified version with detected manager"
+    if test -z "$manager" -o -z "$node_version"
         echo "Usage: nvm_compat_use <manager> <version>"
         return 1
     end
 
     switch $manager
         case nvm
-            nvm use $version; or return $status
+            nvm use $node_version; or return $status
         case fnm
-            fnm use $version; or return $status
+            fnm use $node_version; or return $status
         case volta
-            volta pin node@$version; or return $status
+            volta pin node@$node_version; or return $status
         case asdf
-            asdf local nodejs $version; or return $status
+            asdf local nodejs $node_version; or return $status
         case '*'
             echo "Unsupported manager: $manager"
             return 1
     end
 end
 
-function nvm_compat_install -a manager version -d "Install specified version with detected manager"
-    if test -z "$manager" -o -z "$version"
+function nvm_compat_install -a manager node_version -d "Install specified version with detected manager"
+    if test -z "$manager" -o -z "$node_version"
         echo "Usage: nvm_compat_install <manager> <version>"
         return 1
     end
 
     switch $manager
         case nvm
-            nvm install $version; or return $status
+            nvm install $node_version; or return $status
         case fnm
-            fnm install $version; or return $status
+            fnm install $node_version; or return $status
         case volta
-            volta install node@$version; or return $status
+            volta install node@$node_version; or return $status
         case asdf
-            asdf install nodejs $version; or return $status
+            asdf install nodejs $node_version; or return $status
         case '*'
             echo "Unsupported manager: $manager"
             return 1

@@ -51,7 +51,8 @@ function nvm_error_recovery -d "Error recovery and graceful degradation"
             echo "⚠️  Network failure during version operation" >&2
 
             # Check if we have a cached version list
-            set -l cache_key "versions_$(echo $argv[2] | shasum | cut -d' ' -f1)"
+            set -l hash (echo $argv[2] | shasum | cut -d' ' -f1)
+            set -l cache_key "versions_$hash"
             if set -l cached_versions (nvm_cache get "$cache_key" 86400) # 24 hour TTL
                 echo "📦 Using cached version information" >&2
                 echo "$cached_versions"
@@ -107,7 +108,7 @@ end
 
 function _nvm_error_recovery_try_manager -d "Try using a specific manager"
     set -l manager $argv[1]
-    set -l version $argv[2]
+    set -l node_version $argv[2]
 
     if not command -q "$manager"
         return 1
@@ -115,13 +116,13 @@ function _nvm_error_recovery_try_manager -d "Try using a specific manager"
 
     switch $manager
         case nvm
-            nvm use "$version" 2>/dev/null
+            nvm use "$node_version" 2>/dev/null
         case fnm
-            fnm use "$version" 2>/dev/null
+            fnm use "$node_version" 2>/dev/null
         case volta
-            volta pin "node@$version" 2>/dev/null
+            volta pin "node@$node_version" 2>/dev/null
         case asdf
-            asdf local nodejs "$version" 2>/dev/null
+            asdf local nodejs "$node_version" 2>/dev/null
         case '*'
             return 1
     end

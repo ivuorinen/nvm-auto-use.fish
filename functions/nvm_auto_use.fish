@@ -44,7 +44,7 @@ function nvm_auto_use --on-variable PWD
 end
 
 function _nvm_auto_use_select_manager
-    set -l available_managers (nvm_compat_detect 2>/dev/null)
+    set -l available_managers (nvm_compat_detect 2>/dev/null | string split ' ')
     if test -z "$available_managers"
         return
     end

@@ -24,7 +24,7 @@ function test_version_validation
 
     # Suspicious characters
     nvm_security check_version "18.0.0; touch /tmp/nvm-auto-use-malicious-test"
-    set status_code $status
+    set -l status_code $status
     test $status_code -ne 0
     and echo "✅ Malicious version string rejected"
     or echo "❌ Malicious version string accepted"
@@ -54,7 +54,7 @@ function test_security_policies
 
     # Test version above maximum
     nvm_security check_version "21.0.0"
-    set status_code $status
+    set -l status_code $status
     test $status_code -ne 0
     and echo "✅ Version above maximum rejected"
     or echo "❌ Version above maximum accepted"

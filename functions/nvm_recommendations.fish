@@ -296,7 +296,7 @@ function _nvm_analyze_version_constraints -d "Analyze existing version constrain
     set -l constraints
 
     # Check package.json engines
-    if test -f "package.json" -a command -q jq
+    if test -f "package.json"; and command -q jq
         set -l engine_constraint (jq -r '.engines.node // empty' package.json 2>/dev/null)
         if test -n "$engine_constraint"
             set constraints $constraints "package.json: $engine_constraint"
@@ -313,8 +313,8 @@ function _nvm_analyze_version_constraints -d "Analyze existing version constrain
 end
 
 function _nvm_check_if_lts -d "Check if version is LTS"
-    set -l version $argv[1]
-    set -l major (echo "$version" | string replace -r '^([0-9]+)\..*' '$1')
+    set -l node_version $argv[1]
+    set -l major (echo "$node_version" | string replace -r '^([0-9]+)\..*' '$1')
 
     # LTS versions: 16, 18, 20 (even numbers)
     if test (math "$major % 2") -eq 0
@@ -325,8 +325,8 @@ function _nvm_check_if_lts -d "Check if version is LTS"
 end
 
 function _nvm_check_if_outdated -d "Check if version is outdated"
-    set -l version $argv[1]
-    set -l major (echo "$version" | string replace -r '^([0-9]+)\..*' '$1')
+    set -l node_version $argv[1]
+    set -l major (echo "$node_version" | string replace -r '^([0-9]+)\..*' '$1')
 
     # Simplified check - versions below 16 are definitely outdated
     if test $major -lt 16
@@ -351,4 +351,112 @@ function _nvm_get_next_lts -d "Get next LTS version"
     end
 
     echo "$next_lts"
+end
+
+function _nvm_recommend_for_migration -d "Recommendations for project migration"
+    set -l current_version $argv[1]
+    if test -z "$current_version"
+        echo "• No current Node.js version detected — install latest LTS"
+        return
+    end
+    echo "• Current: $current_version"
+    set -l target (_nvm_suggest_upgrade_target "$current_version")
+    if test -n "$target"
+        echo "• Suggested migration target: $target"
+    end
+    echo "• Run 'nvm_recommendations upgrade_path' for the full plan"
+end
+
+function _nvm_recommend_general -d "General recommendations when no context is given"
+    set -l project_type $argv[1]
+    set -l current_version $argv[2]
+    if test -n "$project_type"
+        echo "• Project type: $project_type"
+    end
+    if test -n "$current_version"
+        echo "• Current version: $current_version"
+    end
+    echo "• Use the latest LTS unless a project pins a specific version"
+    echo "• Run 'nvm_recommendations suggest_version <new_project|existing_project|migration>' for tailored advice"
+end
+
+function _nvm_recommend_compatibility -d "Compatibility recommendations between versions and tools"
+    set -l target_version $argv[1]
+    if test -z "$target_version"
+        if command -q node
+            set target_version (node --version | string replace -r '^v' '')
+        end
+    end
+    if test -z "$target_version"
+        echo "• Specify a target version: nvm_recommendations compatibility <version>"
+        return
+    end
+    set -l major (echo $target_version | string replace -r '^([0-9]+)\..*' '$1')
+    echo "• Node $target_version compatibility notes:"
+    switch $major
+        case 16
+            echo "  - npm 8 is bundled; some modern tooling expects npm 9+"
+        case 18
+            echo "  - LTS through 2025; broad ecosystem support"
+        case 20 21 22
+            echo "  - Modern V8; verify native module support before upgrading"
+        case '*'
+            echo "  - Verify ecosystem support for major version $major"
+    end
+end
+
+function _nvm_recommend_manager -d "Recommend a version manager"
+    set -l available (nvm_compat_detect 2>/dev/null | string split ' ')
+    if test -z "$available"
+        echo "• No version manager detected. Install one of: nvm, fnm, volta, asdf"
+        echo "• fnm is recommended for fast startup; nvm for the broadest ecosystem"
+        return
+    end
+    echo "• Available: "(string join ', ' $available)
+    if contains fnm $available
+        echo "• fnm: fastest startup; good default for daily use"
+    end
+    if contains nvm $available
+        echo "• nvm: most widely used; broadest ecosystem"
+    end
+    if contains volta $available
+        echo "• volta: pins per-project tools, not just Node"
+    end
+    if contains asdf $available
+        echo "• asdf: useful when managing multiple language runtimes"
+    end
+end
+
+function _nvm_recommend_config -d "Configuration recommendations"
+    echo "• Pin Node version with .nvmrc, .node-version, or .tool-versions"
+    echo "• Set engines.node in package.json for tooling enforcement"
+    echo "• Enable silent mode in shared shells: nvm_auto_use_config silent on"
+    echo "• Exclude noisy directories: nvm_auto_use_config exclude <pattern>"
+    echo "• Tune debounce on slow filesystems: nvm_auto_use_config debounce <ms>"
+end
+
+function _nvm_suggest_upgrade_target -d "Suggest upgrade target for a version"
+    set -l current $argv[1]
+    set -l major (echo $current | string replace -r '^v?([0-9]+)\..*' '$1')
+    _nvm_get_next_lts $major
+end
+
+function _nvm_get_secure_versions -d "Return space-separated list of versions believed safe"
+    echo "18.20.4 20.17.0 22.9.0"
+end
+
+function _nvm_analyze_dependencies -d "Lightweight dependency engine analysis"
+    if not test -f package.json
+        return
+    end
+    if command -q jq
+        set -l engine (jq -r '.engines.node // empty' package.json 2>/dev/null)
+        if test -n "$engine"
+            echo "• package.json engines.node: $engine"
+        else
+            echo "• package.json has no engines.node constraint"
+        end
+    else
+        echo "• Install jq for richer dependency analysis"
+    end
 end

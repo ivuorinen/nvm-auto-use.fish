@@ -23,17 +23,18 @@ function run_tests -d "Run all tests"
 
     # Run each test file
     for test_file in $test_files
+        set -l name (basename $test_file)
         echo
-        echo "📁 Running $(basename $test_file)"
-        echo "$(string repeat -N (string length "📁 Running $(basename $test_file)") -)"
+        echo "📁 Running $name"
+        echo (string repeat -N (string length "📁 Running $name") -)
 
         set -l test_result (fish "$test_file")
         set -l test_status $status
 
         if test $test_status -eq 0
-            echo "✅ $(basename $test_file) passed"
+            echo "✅ $name passed"
         else
-            echo "❌ $(basename $test_file) failed"
+            echo "❌ $name failed"
             set failed_tests (math "$failed_tests + 1")
         end
 
@@ -137,9 +138,23 @@ end
 function setup_test_env -d "Set up test environment"
     # Create temporary test directory
     set -g TEST_DIR (mktemp -d)
+    set -l script_dir (dirname (status -f))
+    set -l repo_root (dirname $script_dir)
+
+    # Make the project's functions autoload in tests (and in any
+    # `fish -c` subshells that inherit this environment variable).
+    # Also source each file so private `_nvm_*` helpers (which Fish
+    # autoload won't pick up) are available to tests.
+    if not contains "$repo_root/functions" $fish_function_path
+        set -gx fish_function_path "$repo_root/functions" $fish_function_path
+    end
+    for f in "$repo_root"/functions/*.fish
+        source "$f"
+    end
+
     cd "$TEST_DIR"
 
-    set -g TEST_FIXTURES "$PWD/../tests/fixtures"
+    set -g TEST_FIXTURES "$script_dir/fixtures"
 
     # Link or copy test fixtures from tests/fixtures
     if test -d "$TEST_FIXTURES"
@@ -183,7 +198,8 @@ function cleanup_test_env -d "Clean up test environment"
     end
 end
 
-# Run tests if this script is executed directly
-if test (basename (status current-filename)) = "test_runner.fish"
+# Run tests if this script is executed directly (not sourced).
+# `status stack-trace` includes "from sourcing file" only when sourced.
+if not string match -q '*from sourcing file*' (status stack-trace)
     run_tests
 end

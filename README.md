@@ -1,6 +1,6 @@
 # nvm-auto-use.fish
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fivuorinen%2Fnvm-auto-use.fish.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fivuorinen%2Fnvm-auto-use.fish?ref=badge_shield)
 
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fivuorinen%2Fnvm-auto-use.fish.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fivuorinen%2Fnvm-auto-use.fish?ref=badge_shield)
 
 Intelligent Node.js version management for Fish shell with automatic version switching, multi-manager support,
 and extensive configuration options.
@@ -220,6 +220,5 @@ fisher remove ivuorinen/nvm-auto-use.fish
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
-
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fivuorinen%2Fnvm-auto-use.fish.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fivuorinen%2Fnvm-auto-use.fish?ref=badge_large)

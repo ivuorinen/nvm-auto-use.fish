@@ -33,24 +33,24 @@ function test_version_extraction
     cd "$TEST_DIR"
     # Test .nvmrc
     echo "18.17.0" >test.nvmrc
-    set -l version (nvm_extract_version "test.nvmrc")
-    assert_equals "$version" "18.17.0" "Extracted version from .nvmrc"
+    set -l node_version (nvm_extract_version "test.nvmrc")
+    assert_equals "$node_version" "18.17.0" "Extracted version from .nvmrc"
 
     # Test .node-version
     echo "16.20.0" >test.node-version
-    set version (nvm_extract_version "test.node-version")
-    assert_equals "$version" "16.20.0" "Extracted version from .node-version"
+    set node_version (nvm_extract_version "test.node-version")
+    assert_equals "$node_version" "16.20.0" "Extracted version from .node-version"
 
     # Test .tool-versions
     echo "nodejs 20.5.0" >test.tool-versions
-    set version (nvm_extract_version "test.tool-versions:nodejs")
-    assert_equals "$version" "20.5.0" "Extracted version from .tool-versions"
+    set node_version (nvm_extract_version "test.tool-versions:nodejs")
+    assert_equals "$node_version" "20.5.0" "Extracted version from .tool-versions"
 
     # Test package.json (requires jq)
     if command -q jq
         echo '{"engines": {"node": ">=18.0.0"}}' >test.package.json
-        set version (nvm_extract_version "test.package.json:engines.node")
-        assert_equals "$version" "18.0.0" "Extracted version from package.json"
+        set node_version (nvm_extract_version "test.package.json:engines.node")
+        assert_equals "$node_version" "18.0.0" "Extracted version from package.json"
     else
         echo "ℹ️  Skipping package.json test (jq not available)"
     end
