@@ -13,14 +13,17 @@ function test_nvm_cache_get_set_delete
     _nvm_cache_set $key $value
     set -l result (_nvm_cache_get $key 300)
     assert_equals "$result" "$value" "Cache set and get returns correct value"
+    or return 1
 
     # Delete cache value
     _nvm_cache_delete $key
-    set -l result (_nvm_cache_get $key 300)
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ Cache delete works"
-    or echo "❌ Cache delete failed"
+    _nvm_cache_get $key 300 >/dev/null
+    if test $status -ne 0
+        echo "✅ Cache delete works"
+    else
+        echo "❌ Cache delete failed"
+        return 1
+    end
 
     return 0
 end
@@ -35,11 +38,13 @@ function test_nvm_cache_clear_and_stats
     # Stats should show at least 2 files
     set -l stats (_nvm_cache_stats)
     assert_contains "$stats" "Cache files:" "Cache stats reports file count"
+    or return 1
 
     # Clear cache
     _nvm_cache_clear
     set -l stats_after (_nvm_cache_stats)
-    assert_contains "$stats_after" "Cache files: 0" "Cache clear removes all files"
+    assert_contains "$stats_after" "No cache directory found" "Cache clear removes the cache directory"
+    or return 1
 
     return 0
 end
@@ -55,13 +60,16 @@ function test_nvm_cache_ttl
     # Should exist immediately
     set -l result (_nvm_cache_get $key 10)
     assert_equals "$result" "$value" "Cache value exists within TTL"
+    or return 1
 
     # Simulate expired cache by setting TTL to 0
-    set -l result (_nvm_cache_get $key 0)
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ Cache TTL expiration works"
-    or echo "❌ Cache TTL expiration failed"
+    _nvm_cache_get $key 0 >/dev/null
+    if test $status -ne 0
+        echo "✅ Cache TTL expiration works"
+    else
+        echo "❌ Cache TTL expiration failed"
+        return 1
+    end
 
     _nvm_cache_delete $key
 
@@ -72,20 +80,26 @@ function test_nvm_cache_dir
     echo "Testing _nvm_cache_dir returns a valid directory..."
 
     set -l dir (_nvm_cache_dir)
-    test -n "$dir"
-    and echo "✅ _nvm_cache_dir returns: $dir"
-    or echo "❌ _nvm_cache_dir did not return a directory"
-
-    return 0
+    if test -n "$dir"
+        echo "✅ _nvm_cache_dir returns: $dir"
+        return 0
+    else
+        echo "❌ _nvm_cache_dir did not return a directory"
+        return 1
+    end
 end
 
 function main
+    setup_test_env
+
     set -l failed 0
 
     test_nvm_cache_get_set_delete; or set failed (math "$failed + 1")
     test_nvm_cache_clear_and_stats; or set failed (math "$failed + 1")
     test_nvm_cache_ttl; or set failed (math "$failed + 1")
     test_nvm_cache_dir; or set failed (math "$failed + 1")
+
+    cleanup_test_env
 
     if test $failed -eq 0
         echo "🎉 All nvm_cache helper tests passed!"

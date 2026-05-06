@@ -41,7 +41,7 @@ function nvm_extract_version -a file_path -d "Extract Node.js version from vario
                 switch "$node_version"
                     case 'lts/*' lts latest stable node
                         if command -q nvm
-                            set node_version (nvm version-remote "$node_version" 2>/dev/null | string replace 'v' '')
+                            set node_version (nvm version-remote "$node_version" 2>/dev/null | string replace -r '^v' '')
                         else if command -q node
                             set node_version (node -v 2>/dev/null | string replace -r '^v' '')
                         end

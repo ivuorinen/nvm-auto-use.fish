@@ -8,9 +8,14 @@ function nvm_notify -a message -d "Send notification for Node.js version changes
         return
     end
 
-    # Try different notification methods until one succeeds
+    # Try different notification methods until one succeeds.
+    # AppleScript escaping: backslashes and double quotes must be escaped
+    # before embedding in the osascript string, or the script breaks (and a
+    # crafted message could escape the literal).
     if command -q osascript
-        osascript -e "display notification \"$message\" with title \"nvm-auto-use\""
+        set -l escaped (string replace -a '\\' '\\\\' -- "$message" \
+            | string replace -a '"' '\\"')
+        osascript -e "display notification \"$escaped\" with title \"nvm-auto-use\""
         return
     end
     if command -q notify-send

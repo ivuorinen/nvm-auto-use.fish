@@ -77,14 +77,15 @@ lint-fish:
 	}
 	@echo "Fish files passed linting!"
 
-# Lint Markdown files
+# Lint Markdown files (recursive — picks up docs/, tests/, etc.)
 lint-markdown:
 	@echo "Linting Markdown files..."
 	@if command -v markdownlint >/dev/null 2>&1; then \
-		markdownlint --config .markdownlint.json *.md || { \
-			echo "Markdown linting failed"; \
-			exit 1; \
-		}; \
+		find . -name '*.md' -type f -not -path './node_modules/*' -print0 \
+			| xargs -0 markdownlint --config .markdownlint.json || { \
+				echo "Markdown linting failed"; \
+				exit 1; \
+			}; \
 	else \
 		echo "markdownlint not found, skipping markdown linting"; \
 	fi
@@ -119,7 +120,7 @@ lint-editorconfig:
 	else \
 		echo "Installing editorconfig-checker..."; \
 		.github/install_editorconfig-checker.sh; \
-		editorconfig-checker; \
+		PATH="$$PWD/bin:$$PATH" editorconfig-checker; \
 	fi
 	@echo "EditorConfig compliance passed!"
 
@@ -130,7 +131,9 @@ lint-fix:
 	@find . -name "*.fish" -type f -exec fish_indent --write {} \;
 	@if command -v markdownlint >/dev/null 2>&1; then \
 		echo "Fixing Markdown files..."; \
-		markdownlint --config .markdownlint.json --fix *.md 2>/dev/null || true; \
+		find . -name '*.md' -type f -not -path './node_modules/*' -print0 \
+			| xargs -0 markdownlint --config .markdownlint.json --fix 2>/dev/null \
+			|| true; \
 	fi
 	@echo "Linting fixes applied!"
 
@@ -187,5 +190,7 @@ clean:
 	@echo "Cleaning temporary files..."
 	@find . -name "*.tmp" -type f -delete 2>/dev/null || true
 	@find . -name ".DS_Store" -type f -delete 2>/dev/null || true
-	@nvm_cache clear 2>/dev/null || true
+	@command -v fish >/dev/null 2>&1 \
+		&& fish -c 'nvm_cache clear' 2>/dev/null \
+		|| true
 	@echo "Cleanup complete!"

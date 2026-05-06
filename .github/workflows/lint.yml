@@ -1,5 +1,9 @@
+---
 name: Lint
 
+permissions: {}
+
+# yamllint disable-line rule:truthy
 on:
     push:
         branches: [main, develop]
@@ -10,6 +14,8 @@ jobs:
     lint:
         runs-on: ubuntu-latest
         name: Lint codebase
+        permissions:
+            contents: read
 
         steps:
             - name: Checkout code
@@ -20,7 +26,6 @@ jobs:
 
             - name: Setup Fish shell
               run: |
-                  sudo add-apt-repository ppa:fish-shell/release-3
                   sudo apt-get update
                   sudo apt-get install -y fish
 

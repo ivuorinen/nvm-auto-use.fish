@@ -24,7 +24,7 @@ function nvm_auto_use --on-variable PWD
 
     # Export NODE_VERSION environment variable if available
     if command -q node
-        set -gx NODE_VERSION (node -v 2>/dev/null | string replace 'v' '')
+        set -gx NODE_VERSION (node -v 2>/dev/null | string replace -r '^v' '')
     end
 
     # Find version file and its mtime
@@ -59,7 +59,17 @@ end
 
 function _nvm_auto_use_should_debounce
     set -l debounce_ms (_nvm_auto_use_get_debounce)
-    set -l current_time (date +%s%3N 2>/dev/null; or math "(date +%s) * 1000")
+    # GNU date supports %3N (millisecond precision); BSD/macOS date silently
+    # outputs a literal "3N" suffix, so we must validate the result before
+    # using it. Fall back to seconds * 1000 if the precise form looks bogus.
+    set -l current_time (date +%s%3N 2>/dev/null)
+    if not string match -qr '^\d+$' -- "$current_time"
+        # Fallback: convert seconds to milliseconds. `math` does not accept
+        # command substitution inside its expression, so resolve the value
+        # to a variable first.
+        set -l seconds (date +%s)
+        set current_time (math "$seconds * 1000")
+    end
     if test -n "$_nvm_auto_use_last_change"
         set -l time_diff (math "$current_time - $_nvm_auto_use_last_change")
         if test $time_diff -lt $debounce_ms
@@ -82,7 +92,9 @@ function _nvm_auto_use_is_excluded_dir
 end
 
 function _nvm_auto_use_get_mtime
-    set -l file $argv[1]
+    # nvm_find_nvmrc returns values like "path/to/package.json:engines.node"
+    # for non-plain formats; strip the ":format" suffix so stat sees a real path.
+    set -l file (string split -m 1 ':' -- "$argv[1]")[1]
     if test -n "$file"
         stat -c %Y "$file" 2>/dev/null; or stat -f %m "$file" 2>/dev/null
     end
@@ -91,6 +103,12 @@ end
 function _nvm_auto_use_is_cache_valid
     set -l file $argv[1]
     set -l mtime $argv[2]
+    # Treat empty file as "no cache" — empty == empty must not short-circuit
+    # the rest of nvm_auto_use (which needs to clear stale caches when
+    # there's no version file in the new directory).
+    if test -z "$file"
+        return 1
+    end
     if test "$file" = "$_nvm_auto_use_cached_file"; and test "$mtime" = "$_nvm_auto_use_cached_mtime"
         return 0
     end

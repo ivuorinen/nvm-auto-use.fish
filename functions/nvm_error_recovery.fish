@@ -51,8 +51,7 @@ function nvm_error_recovery -d "Error recovery and graceful degradation"
             echo "⚠️  Network failure during version operation" >&2
 
             # Check if we have a cached version list
-            set -l hash (echo $argv[2] | shasum | cut -d' ' -f1)
-            set -l cache_key "versions_$hash"
+            set -l cache_key "versions_"(_nvm_security_hash "$argv[2]")
             if set -l cached_versions (nvm_cache get "$cache_key" 86400) # 24 hour TTL
                 echo "📦 Using cached version information" >&2
                 echo "$cached_versions"

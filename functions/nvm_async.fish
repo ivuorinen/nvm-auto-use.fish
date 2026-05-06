@@ -25,14 +25,19 @@ function _nvm_async_version_check -d "Async version check operation"
         return 0
     end
 
-    # Background job for version extraction
-    fish -c "
-        set result (nvm_extract_version '$version_file' 2>/dev/null)
-        if test -n \"\$result\"
-            nvm_cache set '$cache_key' \"\$result\"
-            echo \"\$result\"
+    # Background job for version extraction. Pass values as positional
+    # arguments so quotes/newlines/etc. in $version_file or $cache_key
+    # cannot break the embedded script (and to close the door on
+    # command-injection via untrusted file paths).
+    fish -c '
+        set -l version_file $argv[1]
+        set -l cache_key $argv[2]
+        set -l result (nvm_extract_version "$version_file" 2>/dev/null)
+        if test -n "$result"
+            nvm_cache set "$cache_key" "$result"
+            echo "$result"
         end
-    " &
+    ' -- "$version_file" "$cache_key" &
 
     # Return PID of the background job
     echo $last_pid
@@ -40,6 +45,14 @@ end
 
 function _nvm_async_manager_check -d "Async manager availability check"
     set -l manager $argv[1]
+
+    # Validate manager against the allow-list before any further work — a
+    # caller-supplied value with quotes/whitespace must not be embedded in
+    # a `fish -c` script.
+    if not contains -- "$manager" nvm fnm volta asdf
+        return 1
+    end
+
     set -l cache_key (_nvm_cache_manager_key "$manager")
 
     # Try cache first (longer TTL for manager availability)
@@ -48,16 +61,18 @@ function _nvm_async_manager_check -d "Async manager availability check"
         return 0
     end
 
-    # Background check
-    fish -c "
-        if command -q '$manager'
-            nvm_cache set '$cache_key' 'available'
-            echo 'available'
+    # Background check, passing values positionally rather than interpolating
+    fish -c '
+        set -l manager $argv[1]
+        set -l cache_key $argv[2]
+        if command -q $manager
+            nvm_cache set "$cache_key" available
+            echo available
         else
-            nvm_cache set '$cache_key' 'unavailable'
-            echo 'unavailable'
+            nvm_cache set "$cache_key" unavailable
+            echo unavailable
         end
-    " &
+    ' -- "$manager" "$cache_key" &
 
     echo $last_pid
 end

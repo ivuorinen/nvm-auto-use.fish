@@ -1,11 +1,14 @@
 ---
 name: PR Lint
 
+permissions: {}
+
+# yamllint disable-line rule:truthy
 on:
   push:
-    branches-ignore: [ master, main ]
+    branches-ignore: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
 
 jobs:
   Lint:
@@ -14,5 +17,7 @@ jobs:
       contents: read
       packages: read
       statuses: write
+      issues: write
+      pull-requests: write
     steps:
       - uses: ivuorinen/actions/pr-lint@84380fe01733b915ffea5892083ee636ed2b765a # v2026.05.04

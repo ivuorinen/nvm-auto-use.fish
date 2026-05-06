@@ -1,22 +1,21 @@
 function nvm_cache -d "XDG-compliant cache management with TTL"
     set -l action $argv[1]
-    set -l key $argv[2]
-    set -l value $argv[3]
-    set -l ttl $argv[4]
 
     switch $action
         case get
-            _nvm_cache_get "$key" "$ttl"
+            # Usage: nvm_cache get <key> [ttl]
+            _nvm_cache_get $argv[2] $argv[3]
         case set
-            _nvm_cache_set "$key" "$value"
+            # Usage: nvm_cache set <key> <value>
+            _nvm_cache_set $argv[2] $argv[3]
         case delete
-            _nvm_cache_delete "$key"
+            _nvm_cache_delete $argv[2]
         case clear
             _nvm_cache_clear
         case stats
             _nvm_cache_stats
         case '*'
-            echo "Usage: nvm_cache [get|set|delete|clear|stats] <key> [value] [ttl]"
+            echo "Usage: nvm_cache [get|set|delete|clear|stats] <key> [value-or-ttl]"
             return 1
     end
 end
@@ -48,7 +47,10 @@ function _nvm_cache_get -d "Get cache value by key, respecting TTL"
         set default_ttl $ttl
     end
 
-    if test (math "$current_time - $cache_time") -gt $default_ttl
+    # Use -ge so TTL=N means "fresh for less than N seconds" — at age N
+    # the entry is considered stale (consistent with HTTP max-age semantics
+    # and lets callers pass TTL=0 to force expiration in tests).
+    if test (math "$current_time - $cache_time") -ge $default_ttl
         rm "$cache_file" 2>/dev/null
         return 1
     end
@@ -90,7 +92,7 @@ function _nvm_cache_stats -d "Show cache statistics"
     set -l cache_dir (_nvm_cache_dir)
     if test -d "$cache_dir"
         echo "Cache directory: $cache_dir"
-        echo "Cache files: "(find "$cache_dir" -type f 2>/dev/null | wc -l)
+        echo "Cache files: "(find "$cache_dir" -type f 2>/dev/null | wc -l | string trim)
         echo "Cache size: "(du -sh "$cache_dir" 2>/dev/null | cut -f1)
     else
         echo "No cache directory found"
@@ -99,8 +101,8 @@ function _nvm_cache_stats -d "Show cache statistics"
 end
 
 function _nvm_cache_key -d "Generate cache key from directory and file"
-    set -l dir_hash (pwd | shasum | cut -d' ' -f1)
-    set -l file_hash (echo "$argv[1]" | shasum | cut -d' ' -f1)
+    set -l dir_hash (_nvm_security_hash (pwd))
+    set -l file_hash (_nvm_security_hash "$argv[1]")
     echo "dir_"$dir_hash"_"$file_hash
 end
 

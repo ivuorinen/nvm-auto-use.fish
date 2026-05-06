@@ -31,7 +31,7 @@ function _nvm_recommend_version -d "Recommend appropriate Node.js version"
     set -l constraints (_nvm_analyze_version_constraints)
     set -l current_version
     if command -q node
-        set current_version (node --version | string replace 'v' '')
+        set current_version (node --version | string replace -r '^v' '')
     end
 
     # Get available managers and their capabilities
@@ -148,7 +148,7 @@ function _nvm_recommend_upgrade -d "Recommend upgrade path"
 
     if test -z "$current_version"
         if command -q node
-            set current_version (node --version | string replace 'v' '')
+            set current_version (node --version | string replace -r '^v' '')
         else
             echo "❌ No Node.js version specified or installed"
             return 1
@@ -194,7 +194,7 @@ function _nvm_recommend_security_update -d "Recommend security-focused updates"
     echo "=================================="
 
     if command -q node
-        set -l current_version (node --version | string replace 'v' '')
+        set -l current_version (node --version | string replace -r '^v' '')
         echo "Current version: $current_version"
 
         # Check for vulnerabilities
@@ -233,7 +233,7 @@ function _nvm_recommend_performance -d "Performance optimization recommendations
     echo "=========================================="
 
     if command -q node
-        set -l current_version (node --version | string replace 'v' '')
+        set -l current_version (node --version | string replace -r '^v' '')
         set -l major_version (echo "$current_version" | string replace -r '^([0-9]+)\..*' '$1')
 
         echo "Current version: $current_version"
@@ -309,7 +309,7 @@ function _nvm_analyze_version_constraints -d "Analyze existing version constrain
         set constraints $constraints ".nvmrc: $nvmrc_version"
     end
 
-    echo "$constraints" | string join '; '
+    string join '; ' $constraints
 end
 
 function _nvm_check_if_lts -d "Check if version is LTS"

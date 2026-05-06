@@ -13,10 +13,11 @@ function nvm_compat_detect -d "Detect available Node.js version managers"
         set managers $managers volta
     end
 
-    if command -q asdf; and test -f ~/.tool-versions
-        if grep -q nodejs ~/.tool-versions 2>/dev/null
-            set managers $managers asdf
-        end
+    # asdf manages many runtimes; only include it when the nodejs plugin
+    # is actually installed — checking ~/.tool-versions misses project-local
+    # setups (.tool-versions in a subdirectory).
+    if command -q asdf; and asdf plugin list 2>/dev/null | grep -qx nodejs
+        set managers $managers asdf
     end
 
     if test (count $managers) -eq 0

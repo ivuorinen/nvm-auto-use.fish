@@ -20,7 +20,9 @@ function test_select_manager
     assert_equals "$manager" volta "Preferred manager selection works"
 
     set -e _nvm_auto_use_preferred_manager
-    functions -e nvm_compat_detect
+    # Note: leaving the nvm_compat_detect mock in place. `functions -e` here
+    # would prevent fish from autoloading the real implementation later
+    # (subsequent tests' cd hooks would otherwise hit "Unknown command").
 end
 
 function test_should_debounce
@@ -29,13 +31,27 @@ function test_should_debounce
     set -e _nvm_auto_use_last_change
     set -g _nvm_auto_use_debounce_ms 1000
 
-    # First call should set last_change and return 1 (not debounced)
-    set result (_nvm_auto_use_should_debounce)
-    assert_equals "$result" "" "First call not debounced"
+    # These helpers communicate via $status, not stdout. Capturing the
+    # (always-empty) output and asserting equality with "" silently passes
+    # even if the logic is wrong — so check the exit status directly.
 
-    # Second call within debounce period should return 0 (debounced)
-    set result (_nvm_auto_use_should_debounce)
-    assert_equals "$result" "" "Second call debounced"
+    # First call: no prior change recorded → not debounced (return 1).
+    _nvm_auto_use_should_debounce
+    if test $status -ne 0
+        echo "✅ First call not debounced"
+    else
+        echo "❌ First call should not have been debounced"
+        return 1
+    end
+
+    # Second call within debounce window → debounced (return 0).
+    _nvm_auto_use_should_debounce
+    if test $status -eq 0
+        echo "✅ Second call debounced"
+    else
+        echo "❌ Second call should have been debounced"
+        return 1
+    end
 
     set -e _nvm_auto_use_last_change
     set -e _nvm_auto_use_debounce_ms
@@ -49,8 +65,15 @@ function test_is_excluded_dir
     mkdir -p "$TEST_DIR/testdir"
     cd "$TEST_DIR/testdir"
 
-    set result (_nvm_auto_use_is_excluded_dir)
-    assert_equals "$result" "" "Excluded directory detected"
+    _nvm_auto_use_is_excluded_dir
+    if test $status -eq 0
+        echo "✅ Excluded directory detected"
+    else
+        echo "❌ Excluded directory not detected"
+        cd "$orig_pwd"
+        set -e _nvm_auto_use_excluded_dirs
+        return 1
+    end
 
     cd "$orig_pwd"
     set -e _nvm_auto_use_excluded_dirs
@@ -73,11 +96,37 @@ function test_is_cache_valid
 
     set -g _nvm_auto_use_cached_file foo
     set -g _nvm_auto_use_cached_mtime 123
-    set result (_nvm_auto_use_is_cache_valid "foo" "123")
-    assert_equals "$result" "" "Cache valid returns 0"
 
-    set result (_nvm_auto_use_is_cache_valid "bar" "123")
-    assert_equals "$result" "" "Cache invalid returns 1"
+    _nvm_auto_use_is_cache_valid "foo" "123"
+    if test $status -eq 0
+        echo "✅ Cache valid for matching file/mtime"
+    else
+        echo "❌ Cache should be valid for matching file/mtime"
+        set -e _nvm_auto_use_cached_file
+        set -e _nvm_auto_use_cached_mtime
+        return 1
+    end
+
+    _nvm_auto_use_is_cache_valid "bar" "123"
+    if test $status -ne 0
+        echo "✅ Cache invalid for different file"
+    else
+        echo "❌ Cache should be invalid for different file"
+        set -e _nvm_auto_use_cached_file
+        set -e _nvm_auto_use_cached_mtime
+        return 1
+    end
+
+    # Empty file path must not short-circuit to "valid"
+    _nvm_auto_use_is_cache_valid "" ""
+    if test $status -ne 0
+        echo "✅ Cache invalid for empty file"
+    else
+        echo "❌ Cache must not be valid when no file is detected"
+        set -e _nvm_auto_use_cached_file
+        set -e _nvm_auto_use_cached_mtime
+        return 1
+    end
 
     set -e _nvm_auto_use_cached_file
     set -e _nvm_auto_use_cached_mtime

@@ -13,11 +13,13 @@ function test_cache_basic_operations
 
     # Test delete
     nvm_cache delete test_key
-    nvm_cache get test_key
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ Cache delete works"
-    or echo "❌ Cache delete failed"
+    nvm_cache get test_key >/dev/null
+    if test $status -ne 0
+        echo "✅ Cache delete works"
+    else
+        echo "❌ Cache delete failed"
+        return 1
+    end
 
     return 0
 end
@@ -31,13 +33,16 @@ function test_cache_ttl
     # Should exist immediately
     set -l result (nvm_cache get "ttl_key" 10)
     assert_equals "$result" ttl_value "Cache value exists within TTL"
+    or return 1
 
     # Mock expired cache by setting TTL to 0
-    set -l result (nvm_cache get "ttl_key" 0)
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ Cache TTL expiration works"
-    or echo "❌ Cache TTL expiration failed"
+    nvm_cache get "ttl_key" 0 >/dev/null
+    if test $status -ne 0
+        echo "✅ Cache TTL expiration works"
+    else
+        echo "❌ Cache TTL expiration failed"
+        return 1
+    end
 
     return 0
 end

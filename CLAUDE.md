@@ -9,11 +9,26 @@ changing directories. The plugin uses Fisher as its package manager.
 
 ## Architecture
 
-The plugin consists of two main Fish functions:
+Core entrypoints:
 
-- `nvm_auto_use.fish` - Main function that triggers on directory changes (`--on-variable PWD`) and handles
-  the automatic Node.js version switching
-- `nvm_find_nvmrc.fish` - Utility function that searches for `.nvmrc` files in the current directory and parent directories
+- `nvm_auto_use.fish` — main function that triggers on directory changes (`--on-variable PWD`)
+  and orchestrates the version switch
+- `nvm_find_nvmrc.fish` — walks up the directory tree to locate `.nvmrc`, `.node-version`,
+  `.tool-versions`, or `package.json` engines.node
+
+Supporting modules under `functions/`:
+
+- `nvm_compat_detect.fish` — detect available version managers (nvm, fnm, volta, asdf)
+- `nvm_extract_version.fish` — parse a version string out of any supported file format
+- `nvm_cache.fish` — XDG-compliant on-disk cache with TTL
+- `nvm_async.fish` — non-blocking version/manager checks using Fish background jobs
+- `nvm_security.fish` — version validation, vulnerability check, and security policies
+- `nvm_recommendations.fish` — version/upgrade recommendations
+- `nvm_doctor.fish` — diagnostics and auto-fix
+- `nvm_error_recovery.fish` — fallback paths when a manager or network call fails
+- `nvm_notify.fish` — desktop notifications (osascript / notify-send / terminal-notifier)
+- `nvm_version_prompt.fish` — render the active Node.js version for prompt integration
+- `nvm_auto_use_config.fish` / `nvm_auto_use_silent.fish` — runtime configuration
 
 ## Development Commands
 

@@ -33,8 +33,8 @@ function _nvm_security_validate_version -d "Validate version string format and s
     # Remove leading 'v' if present
     set node_version (string replace -r '^v' '' "$node_version")
 
-    # Check for valid semver format
-    if not string match -qr '^\d+\.\d+\.\d+' "$node_version"
+    # Check for valid semver format (anchored end to reject trailing junk)
+    if not string match -qr '^\d+\.\d+\.\d+$' "$node_version"
         echo "⚠️  Invalid version format: $node_version" >&2
         return 1
     end
@@ -83,16 +83,10 @@ function _nvm_security_check_vulnerabilities -d "Check version for known vulnera
         end
     end
 
-    # Check against known vulnerable versions (offline first)
-    set -l vulnerable_versions "
-        16.0.0
-        16.1.0
-        16.2.0
-        18.0.0
-        18.1.0
-    "
+    # Check against known vulnerable versions (offline, exact match)
+    set -l vulnerable_versions 16.0.0 16.1.0 16.2.0 18.0.0 18.1.0
 
-    if string match -q "*$node_version*" "$vulnerable_versions"
+    if contains -- "$node_version" $vulnerable_versions
         echo "🚨 Version $node_version has known vulnerabilities" >&2
         nvm_cache set "$cache_key" vulnerable
         return 1
@@ -109,25 +103,22 @@ function _nvm_security_check_vulnerabilities -d "Check version for known vulnera
 end
 
 function _nvm_security_online_cve_check -d "Perform online CVE check"
+    # Best-effort online check. Greppling HTML for the version string is too
+    # noisy to reliably classify a version as vulnerable/safe (e.g. ranges
+    # like "< 18.2.0" or benign "fixed in" mentions trip plain substring
+    # matches). Until a structured advisory feed is wired up, persist
+    # `unknown` and surface the curl failure when the network is unreachable.
     set -l node_version $argv[1]
     set -l cache_key $argv[2]
 
-    set -l cve_result (curl -fsSL --max-time 5 'https://nodejs.org/en/about/security/' 2>/dev/null)
-    if test $status -eq 0
-        if echo "$cve_result" | grep -qi "$node_version"
-            nvm_cache set "$cache_key" vulnerable
-            echo "🚨 Version $node_version found in security advisories" >&2
-            return 1
-        else
-            nvm_cache set "$cache_key" safe
-            echo "✅ Version $node_version appears safe" >&2
-            return 0
-        end
+    if curl -fsSL --max-time 5 'https://nodejs.org/en/about/security/' >/dev/null 2>&1
+        nvm_cache set "$cache_key" unknown
+        echo "ℹ️  Online CVE check is best-effort; verdict unknown for $node_version" >&2
     else
         nvm_cache set "$cache_key" unknown
         echo "ℹ️  Unable to verify security status online" >&2
-        return 0
     end
+    return 0
 end
 
 function _nvm_security_validate_source -d "Validate version file source"
@@ -138,9 +129,18 @@ function _nvm_security_validate_source -d "Validate version file source"
         return 1
     end
 
-    # Check file permissions
-    if test -w "$source_file" -a (stat -c %a "$source_file" 2>/dev/null || stat -f %Mp%Lp "$source_file" 2>/dev/null) = 777
-        echo "⚠️  Insecure permissions on $source_file (world-writable)" >&2
+    # Check file permissions: warn if group- or world-writable
+    set -l perm (stat -c %a "$source_file" 2>/dev/null; or stat -f %OLp "$source_file" 2>/dev/null)
+    if test -n "$perm"
+        # Last digit = "other" bits, second-to-last = "group" bits.
+        # A bit-2 in either octet means write permission.
+        set -l other_digit (string sub -s -1 -- $perm)
+        set -l group_digit (string sub -s -2 -l 1 -- $perm)
+        if test (math "$other_digit % 4 / 2") -eq 1
+            echo "⚠️  Insecure permissions on $source_file (world-writable, mode $perm)" >&2
+        else if test (math "$group_digit % 4 / 2") -eq 1
+            echo "⚠️  Insecure permissions on $source_file (group-writable, mode $perm)" >&2
+        end
     end
 
     # Check for suspicious content
@@ -159,7 +159,7 @@ function _nvm_security_audit_current -d "Audit current Node.js installation"
 
     # Current version info
     if command -q node
-        set -l current_version (node --version 2>/dev/null | string replace 'v' '')
+        set -l current_version (node --version 2>/dev/null | string replace -r '^v' '')
         echo "Current version: $current_version"
 
         # Check current version security
@@ -247,8 +247,8 @@ function _nvm_security_version_compare -d "Compare semantic versions"
     set -l operator $argv[3]
 
     # Simple semver comparison
-    set -l v1_parts (string split '.' "$node_version1")
-    set -l v2_parts (string split '.' "$node_version2")
+    set -l v1_parts (string split '.' "$version1")
+    set -l v2_parts (string split '.' "$version2")
 
     for i in (seq 1 3)
         set -l v1_part (echo $v1_parts[$i] | string replace -r '[^0-9].*' '')
