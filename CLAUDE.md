@@ -210,26 +210,13 @@ nvm_version_status
 
 ## Code Quality Standards
 
-### Fish Shell Code
-
-- All Fish code must be formatted with `fish_indent` before committing
-- Functions should include description flags (`-d "description"`)
-- Use proper Fish conventions for variable scoping (`set -l`, `set -g`, `set -gx`)
-- Include comprehensive error handling and input validation
-- Follow Fish best practices for command substitution and string handling
-
-### General Standards
-
-- **Makefile**: 80-character line limit, tab indentation
-- **Markdown**: 120-character line limit, consistent heading structure
-- **JSON**: Valid syntax, proper formatting
-- **EditorConfig**: Consistent line endings (LF), final newlines, no trailing whitespace
+Behavioral mandates live under `.claude/rules/` (path-scoped where
+applicable). See those files for the authoritative rule text.
 
 ### CI/CD Integration
 
-- GitHub Actions automatically runs all linting checks on push/PR
-- All linting must pass before merging
-- Use `make test-ci` for testing plugin installation in CI environments
+- GitHub Actions runs all linting checks on push/PR
+- Use `make test-ci` to test plugin installation in CI environments
 
 ### Tool Installation
 

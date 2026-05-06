@@ -87,6 +87,7 @@ lint-markdown:
 	@find . -name '*.md' -type f \
 		-not -path './node_modules/*' \
 		-not -path './docs/audit/*' \
+		-not -path './.claude/rules/*' \
 		-print0 \
 		| xargs -0 npx --yes markdownlint-cli@$(MARKDOWNLINT_CLI_VERSION) \
 			--config .markdownlint.json || { \
@@ -157,6 +158,7 @@ lint-fix:
 	@find . -name '*.md' -type f \
 		-not -path './node_modules/*' \
 		-not -path './docs/audit/*' \
+		-not -path './.claude/rules/*' \
 		-print0 \
 		| xargs -0 npx --yes markdownlint-cli@$(MARKDOWNLINT_CLI_VERSION) \
 			--config .markdownlint.json --fix 2>/dev/null \
