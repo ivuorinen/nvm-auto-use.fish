@@ -36,7 +36,7 @@ function test_cache_ttl
     or return 1
 
     # Mock expired cache by setting TTL to 0
-    nvm_cache get "ttl_key" 0 >/dev/null
+    nvm_cache get ttl_key 0 >/dev/null
     if test $status -ne 0
         echo "✅ Cache TTL expiration works"
     else

@@ -4,9 +4,20 @@
 FISHER_BASE := https://raw.githubusercontent.com/jorgebucaran/fisher/main
 FISHER_URL := $(FISHER_BASE)/functions/fisher.fish
 
-.PHONY: help install-tools lint lint-fish lint-markdown lint-json \
-	lint-fix lint-check lint-editorconfig test test-ci test-unit \
-	test-integration clean
+# Tool versions (managed by Renovate via ivuorinen/renovate-config)
+# renovate: datasource=npm depName=markdownlint-cli
+MARKDOWNLINT_CLI_VERSION := 0.48.0
+# renovate: datasource=npm depName=jsonlint
+JSONLINT_VERSION := 1.6.3
+# renovate: datasource=npm depName=markdown-table-formatter
+MARKDOWN_TABLE_FORMATTER_VERSION := 1.7.0
+# editorconfig-checker-disable-next-line
+# renovate: datasource=github-releases depName=editorconfig-checker/editorconfig-checker
+EDITORCONFIG_CHECKER_VERSION := v3.6.1
+
+.PHONY: help install-tools lint lint-fish lint-markdown lint-md-tables \
+	lint-json lint-fix lint-check lint-editorconfig test test-ci \
+	test-unit test-integration clean
 
 # Default target
 help:
@@ -26,20 +37,11 @@ help:
 	@echo "  clean           - Clean temporary files"
 
 # Install all required linting tools
+# markdownlint-cli and jsonlint are run via `npx --yes` at version pinned
+# above (Renovate-managed), so they do not need a global install. We only
+# need to make sure jq is available for JSON validation fallback.
 install-tools:
 	@echo "Installing linting tools..."
-	@if ! command -v markdownlint >/dev/null 2>&1; then \
-		echo "Installing markdownlint-cli..."; \
-		npm install -g markdownlint-cli; \
-	else \
-		echo "markdownlint-cli already installed"; \
-	fi
-	@if ! command -v jsonlint >/dev/null 2>&1; then \
-		echo "Installing jsonlint..."; \
-		npm install -g jsonlint; \
-	else \
-		echo "jsonlint already installed"; \
-	fi
 	@if ! command -v jq >/dev/null 2>&1; then \
 		echo "Installing jq..."; \
 		if command -v brew >/dev/null 2>&1; then \
@@ -57,7 +59,7 @@ install-tools:
 	@echo "All linting tools installed!"
 
 # Run all linting checks
-lint: lint-fish lint-markdown lint-json lint-editorconfig
+lint: lint-fish lint-markdown lint-md-tables lint-json lint-editorconfig
 
 # Lint Fish shell files
 lint-fish:
@@ -78,39 +80,55 @@ lint-fish:
 	@echo "Fish files passed linting!"
 
 # Lint Markdown files (recursive — picks up docs/, tests/, etc.)
+# Runs markdownlint-cli at the Renovate-pinned version via npx so CI and
+# local environments use the same version.
 lint-markdown:
 	@echo "Linting Markdown files..."
-	@if command -v markdownlint >/dev/null 2>&1; then \
-		find . -name '*.md' -type f -not -path './node_modules/*' -print0 \
-			| xargs -0 markdownlint --config .markdownlint.json || { \
+	@find . -name '*.md' -type f -not -path './node_modules/*' -print0 \
+		| xargs -0 npx --yes markdownlint-cli@$(MARKDOWNLINT_CLI_VERSION) \
+			--config .markdownlint.json || { \
 				echo "Markdown linting failed"; \
 				exit 1; \
-			}; \
-	else \
-		echo "markdownlint not found, skipping markdown linting"; \
-	fi
+			}
 	@echo "Markdown files passed linting!"
 
+# Verify Markdown tables are formatted (column-aligned). markdown-table-formatter
+# reads stdin and exits 1 in --check mode when reformatting would change output.
+lint-md-tables:
+	@echo "Checking Markdown table formatting..."
+	@status=0; \
+	for file in $$(find . -name '*.md' -type f -not -path './node_modules/*'); do \
+		echo "Checking $$file..."; \
+		npx --yes markdown-table-formatter@$(MARKDOWN_TABLE_FORMATTER_VERSION) \
+			--check <"$$file" >/dev/null \
+			|| { echo "Table formatting issue in $$file"; status=1; }; \
+	done; \
+	exit $$status
+	@echo "Markdown tables passed formatting check!"
+
 # Lint JSON files
+# Prefers jq (system tool) when available; falls back to jsonlint via npx
+# at the Renovate-pinned version.
 lint-json:
 	@echo "Linting JSON files..."
 	@find . \
 		-name "*.json" \
 		-type f \
+		-not -path './node_modules/*' \
 		-exec sh -c \
 		'file="$$1"; echo "Checking $$file..."; \
-		if command -v jsonlint >/dev/null 2>&1; then \
-			jsonlint "$$file" >/dev/null || { \
-				echo "JSON syntax error in $$file"; exit 1; }; \
-		elif command -v jq >/dev/null 2>&1; then \
+		if command -v jq >/dev/null 2>&1; then \
 			jq empty "$$file" >/dev/null || { \
 				echo "JSON syntax error in $$file"; exit 1; }; \
 		else \
-			echo "No JSON linter found, skipping $$file"; fi' \
+			npx --yes jsonlint@$(JSONLINT_VERSION) -q "$$file" || { \
+				echo "JSON syntax error in $$file"; exit 1; }; \
+		fi' \
 		sh {} \;
 	@echo "JSON files passed linting!"
 
 # Check EditorConfig compliance
+# Installer pulls the Renovate-pinned release tag when no system binary exists.
 lint-editorconfig:
 	@echo "Checking EditorConfig compliance..."
 	@if command -v editorconfig-checker >/dev/null 2>&1; then \
@@ -118,8 +136,9 @@ lint-editorconfig:
 	elif command -v ec >/dev/null 2>&1; then \
 		ec; \
 	else \
-		echo "Installing editorconfig-checker..."; \
-		.github/install_editorconfig-checker.sh; \
+		echo "Installing editorconfig-checker $(EDITORCONFIG_CHECKER_VERSION)..."; \
+		EC_VERSION='$(EDITORCONFIG_CHECKER_VERSION)' \
+			.github/install_editorconfig-checker.sh; \
 		PATH="$$PWD/bin:$$PATH" editorconfig-checker; \
 	fi
 	@echo "EditorConfig compliance passed!"
@@ -129,12 +148,21 @@ lint-fix:
 	@echo "Fixing linting issues..."
 	@echo "Formatting Fish files..."
 	@find . -name "*.fish" -type f -exec fish_indent --write {} \;
-	@if command -v markdownlint >/dev/null 2>&1; then \
-		echo "Fixing Markdown files..."; \
-		find . -name '*.md' -type f -not -path './node_modules/*' -print0 \
-			| xargs -0 markdownlint --config .markdownlint.json --fix 2>/dev/null \
-			|| true; \
-	fi
+	@echo "Fixing Markdown files..."
+	@find . -name '*.md' -type f -not -path './node_modules/*' -print0 \
+		| xargs -0 npx --yes markdownlint-cli@$(MARKDOWNLINT_CLI_VERSION) \
+			--config .markdownlint.json --fix 2>/dev/null \
+		|| true
+	@echo "Aligning Markdown tables..."
+	@for file in $$(find . -name '*.md' -type f -not -path './node_modules/*'); do \
+		tmp=$$(mktemp); \
+		if npx --yes markdown-table-formatter@$(MARKDOWN_TABLE_FORMATTER_VERSION) \
+				<"$$file" >"$$tmp" 2>/dev/null; then \
+			mv "$$tmp" "$$file"; \
+		else \
+			rm -f "$$tmp"; \
+		fi; \
+	done
 	@echo "Linting fixes applied!"
 
 # Check linting without fixing

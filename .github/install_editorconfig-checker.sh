@@ -1,9 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Downloading editorconfig-checker..."
+# EC_VERSION is the GitHub release tag (e.g. v3.6.1). Defaults to "latest"
+# so manual invocations still work; the Makefile passes the Renovate-pinned
+# tag when invoking us.
+EC_VERSION="${EC_VERSION:-latest}"
 
-BASE_URL="https://github.com/editorconfig-checker/editorconfig-checker/releases/latest/download"
+echo "Downloading editorconfig-checker (${EC_VERSION})..."
+
+if [ "$EC_VERSION" = "latest" ]; then
+  BASE_URL="https://github.com/editorconfig-checker/editorconfig-checker/releases/latest/download"
+else
+  BASE_URL="https://github.com/editorconfig-checker/editorconfig-checker/releases/download/${EC_VERSION}"
+fi
 
 # Detect OS and architecture
 OS="$(uname -s)"

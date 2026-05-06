@@ -99,12 +99,12 @@ nvm_auto_use_config reset
 
 ## Supported File Formats
 
-| File | Format | Example |
-| ---- | ------ | ------- |
-| `.nvmrc` | Plain version | `18.17.0` or `lts/hydrogen` |
-| `.node-version` | Plain version | `18.17.0` |
-| `.tool-versions` | Tool + version | `nodejs 18.17.0` |
-| `package.json` | engines.node field | `"engines": {"node": ">=16.0.0"}` |
+| File             | Format             | Example                           |
+|------------------|--------------------|-----------------------------------|
+| `.nvmrc`         | Plain version      | `18.17.0` or `lts/hydrogen`       |
+| `.node-version`  | Plain version      | `18.17.0`                         |
+| `.tool-versions` | Tool + version     | `nodejs 18.17.0`                  |
+| `package.json`   | engines.node field | `"engines": {"node": ">=16.0.0"}` |
 
 ## Advanced Features
 

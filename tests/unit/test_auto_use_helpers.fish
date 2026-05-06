@@ -97,7 +97,7 @@ function test_is_cache_valid
     set -g _nvm_auto_use_cached_file foo
     set -g _nvm_auto_use_cached_mtime 123
 
-    _nvm_auto_use_is_cache_valid "foo" "123"
+    _nvm_auto_use_is_cache_valid foo 123
     if test $status -eq 0
         echo "✅ Cache valid for matching file/mtime"
     else
@@ -107,7 +107,7 @@ function test_is_cache_valid
         return 1
     end
 
-    _nvm_auto_use_is_cache_valid "bar" "123"
+    _nvm_auto_use_is_cache_valid bar 123
     if test $status -ne 0
         echo "✅ Cache invalid for different file"
     else
