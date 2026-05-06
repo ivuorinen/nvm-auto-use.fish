@@ -80,26 +80,34 @@ function test_error_recovery
     echo "Testing error recovery mechanisms..."
 
     cd "$TEST_DIR"
-    # Test invalid version handling
-    echo "invalid.version" >invalid.nvmrc
-    set -l result (nvm_extract_version "invalid.nvmrc" 2>/dev/null)
+    set -l failed 0
 
-    if test -z "$result"
-        echo "✅ Invalid version file handled gracefully"
+    # nvm_extract_version is intentionally permissive: it returns the file's
+    # contents verbatim and leaves format validation to nvm_auto_use (see
+    # functions/nvm_auto_use.fish:125). The integration concern here is that
+    # passing odd content does not crash the function — invalid version
+    # rejection is exercised by the unit suite.
+    echo "invalid.version" >invalid.nvmrc
+    nvm_extract_version "invalid.nvmrc" >/dev/null 2>&1
+    if test $status -eq 0
+        echo "✅ Non-semver content extracted without crashing"
     else
-        echo "❌ Invalid version should return empty result"
+        echo "❌ Non-semver content should still extract cleanly"
+        set failed 1
     end
 
     # Test missing file handling
     nvm_extract_version "nonexistent.nvmrc" >/dev/null 2>&1
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ Missing file handled gracefully"
-    or echo "❌ Missing file should return error"
+    if test $status -ne 0
+        echo "✅ Missing file handled gracefully"
+    else
+        echo "❌ Missing file should return error"
+        set failed 1
+    end
 
     rm -f invalid.nvmrc
 
-    return 0
+    return $failed
 end
 
 function test_async_operations
@@ -139,7 +147,6 @@ function test_cache_integration
     echo "18.17.0" >cache_test.nvmrc
 
     # First access should miss cache
-    set -l start_time (date +%s)
     set -l version1 (nvm_extract_version "cache_test.nvmrc")
 
     # Second access should hit cache (if caching is implemented)

@@ -19,8 +19,19 @@ function nvm_auto_use_config -d "Configure nvm-auto-use settings"
             _nvm_auto_use_config_manager $argv[2]
         case reset
             _nvm_auto_use_config_reset
+        case get
+            # Usage: nvm_auto_use_config get [debounce|excluded]
+            switch $argv[2]
+                case debounce
+                    _nvm_auto_use_get_debounce
+                case excluded
+                    _nvm_auto_use_get_excluded_dirs
+                case '*'
+                    echo "Usage: nvm_auto_use_config get [debounce|excluded]"
+                    return 1
+            end
         case '*'
-            echo "Usage: nvm_auto_use_config [auto_install|silent|debounce|exclude|include|manager|reset] [value]"
+            echo "Usage: nvm_auto_use_config [auto_install|silent|debounce|exclude|include|manager|reset|get] [value]"
             return 1
     end
 end
@@ -45,6 +56,7 @@ function _nvm_auto_use_config_auto_install
             echo "Auto-install disabled"
         case '*'
             echo "Usage: nvm_auto_use_config auto_install [on|off]"
+            return 1
     end
 end
 
@@ -59,6 +71,7 @@ function _nvm_auto_use_config_silent
             echo "Silent mode disabled"
         case '*'
             echo "Usage: nvm_auto_use_config silent [on|off]"
+            return 1
     end
 end
 
@@ -69,6 +82,7 @@ function _nvm_auto_use_config_debounce
         echo "Debounce set to $value ms"
     else
         echo "Usage: nvm_auto_use_config debounce <milliseconds>"
+        return 1
     end
 end
 
@@ -79,6 +93,7 @@ function _nvm_auto_use_config_exclude
         echo "Added $value to excluded directories"
     else
         echo "Usage: nvm_auto_use_config exclude <directory_pattern>"
+        return 1
     end
 end
 
@@ -94,6 +109,7 @@ function _nvm_auto_use_config_include
         end
     else
         echo "Usage: nvm_auto_use_config include <directory_pattern>"
+        return 1
     end
 end
 
@@ -105,6 +121,7 @@ function _nvm_auto_use_config_manager
             echo "Preferred manager set to $value"
         else
             echo "Unsupported manager. Supported: nvm, fnm, volta, asdf"
+            return 1
         end
     else
         set -e _nvm_auto_use_preferred_manager

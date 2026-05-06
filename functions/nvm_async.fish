@@ -17,7 +17,7 @@ end
 
 function _nvm_async_version_check -d "Async version check operation"
     set -l version_file $argv[1]
-    set -l cache_key (_nvm_cache_key "$version_file")
+    set -l cache_key (nvm_cache key "$version_file")
 
     # Try cache first
     if set -l cached_result (nvm_cache get "$cache_key" 60)
@@ -53,7 +53,7 @@ function _nvm_async_manager_check -d "Async manager availability check"
         return 1
     end
 
-    set -l cache_key (_nvm_cache_manager_key "$manager")
+    set -l cache_key (nvm_cache manager_key "$manager")
 
     # Try cache first (longer TTL for manager availability)
     if set -l cached_result (nvm_cache get "$cache_key" 3600)

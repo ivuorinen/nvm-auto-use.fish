@@ -195,11 +195,15 @@ make test
 ### Code Quality
 
 - **Fish shell**: Automatic formatting with `fish_indent`
-- **Markdown**: Style checking with `markdownlint`
-- **JSON**: Syntax validation with `jsonlint`/`jq`
+- **Markdown**: Style checking with `markdownlint-cli` and column alignment
+  with `markdown-table-formatter`
+- **JSON**: Syntax validation with `jq` (preferred) or `jsonlint`
 - **EditorConfig**: Compliance checking with `editorconfig-checker`
 
-All tools are automatically installed if missing, following XDG directory standards.
+All npm-based linters are pinned via `# renovate:` markers in `Makefile` and
+invoked through `npx --yes <tool>@<version>`, so CI and local runs always use
+the same version. `editorconfig-checker` is downloaded on demand to an
+XDG-respecting location when no system binary exists.
 
 ### GitHub Actions
 

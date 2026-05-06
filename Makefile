@@ -84,7 +84,10 @@ lint-fish:
 # local environments use the same version.
 lint-markdown:
 	@echo "Linting Markdown files..."
-	@find . -name '*.md' -type f -not -path './node_modules/*' -print0 \
+	@find . -name '*.md' -type f \
+		-not -path './node_modules/*' \
+		-not -path './docs/audit/*' \
+		-print0 \
 		| xargs -0 npx --yes markdownlint-cli@$(MARKDOWNLINT_CLI_VERSION) \
 			--config .markdownlint.json || { \
 				echo "Markdown linting failed"; \
@@ -97,7 +100,9 @@ lint-markdown:
 lint-md-tables:
 	@echo "Checking Markdown table formatting..."
 	@status=0; \
-	for file in $$(find . -name '*.md' -type f -not -path './node_modules/*'); do \
+	for file in $$(find . -name '*.md' -type f \
+		-not -path './node_modules/*' \
+		-not -path './docs/audit/*'); do \
 		echo "Checking $$file..."; \
 		npx --yes markdown-table-formatter@$(MARKDOWN_TABLE_FORMATTER_VERSION) \
 			--check <"$$file" >/dev/null \
@@ -149,12 +154,17 @@ lint-fix:
 	@echo "Formatting Fish files..."
 	@find . -name "*.fish" -type f -exec fish_indent --write {} \;
 	@echo "Fixing Markdown files..."
-	@find . -name '*.md' -type f -not -path './node_modules/*' -print0 \
+	@find . -name '*.md' -type f \
+		-not -path './node_modules/*' \
+		-not -path './docs/audit/*' \
+		-print0 \
 		| xargs -0 npx --yes markdownlint-cli@$(MARKDOWNLINT_CLI_VERSION) \
 			--config .markdownlint.json --fix 2>/dev/null \
 		|| true
 	@echo "Aligning Markdown tables..."
-	@for file in $$(find . -name '*.md' -type f -not -path './node_modules/*'); do \
+	@for file in $$(find . -name '*.md' -type f \
+		-not -path './node_modules/*' \
+		-not -path './docs/audit/*'); do \
 		tmp=$$(mktemp); \
 		if npx --yes markdown-table-formatter@$(MARKDOWN_TABLE_FORMATTER_VERSION) \
 				<"$$file" >"$$tmp" 2>/dev/null; then \

@@ -14,8 +14,14 @@ function nvm_cache -d "XDG-compliant cache management with TTL"
             _nvm_cache_clear
         case stats
             _nvm_cache_stats
+        case key
+            # Usage: nvm_cache key <file>
+            _nvm_cache_key $argv[2]
+        case manager_key
+            # Usage: nvm_cache manager_key <manager>
+            _nvm_cache_manager_key $argv[2]
         case '*'
-            echo "Usage: nvm_cache [get|set|delete|clear|stats] <key> [value-or-ttl]"
+            echo "Usage: nvm_cache [get|set|delete|clear|stats|key|manager_key] <key> [value-or-ttl]"
             return 1
     end
 end

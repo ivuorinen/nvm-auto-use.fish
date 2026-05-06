@@ -34,33 +34,44 @@ Supporting modules under `functions/`:
 
 ### Linting and Code Quality
 
-The project uses a comprehensive linting setup with automatic tool installation:
+The project pins every npm-installed linter via `# renovate:` markers in
+`Makefile` and runs them through `npx --yes <tool>@<version>`. CI and local
+runs always use the same version; Renovate opens PRs on new releases.
 
 ```bash
-# Install all linting tools (markdownlint-cli, jsonlint, jq, editorconfig-checker)
+# Install jq (the only system tool not auto-fetched at lint time)
 make install-tools
 
-# Run all linting checks (Fish, Markdown, JSON, EditorConfig)
+# Run all linting checks (Fish, Markdown, Markdown tables, JSON, EditorConfig)
 make lint
 
-# Fix auto-fixable linting issues
+# Fix auto-fixable linting issues (Fish, Markdown, Markdown tables)
 make lint-fix
 
 # Individual linting commands
 make lint-fish         # Lint Fish shell files (formatting + syntax)
-make lint-markdown     # Lint Markdown files (style, headers, lists)
-make lint-json         # Lint JSON files (syntax validation)
-make lint-editorconfig # Check EditorConfig compliance (line endings, indentation)
+make lint-markdown     # Lint Markdown files (markdownlint-cli, pinned)
+make lint-md-tables    # Verify Markdown tables are column-aligned
+make lint-json         # Lint JSON files (jq preferred, jsonlint fallback)
+make lint-editorconfig # Check EditorConfig compliance
 ```
 
 #### Supported Linting Tools
 
 - **Fish shell**: `fish_indent` for formatting, `fish -n` for syntax validation
-- **Markdown**: `markdownlint-cli` with custom configuration (`.markdownlint.json`)
-- **JSON**: `jsonlint` or `jq` for syntax validation
-- **EditorConfig**: `editorconfig-checker` (auto-installed if missing)
+- **Markdown**: `markdownlint-cli` (style) + `markdown-table-formatter` (column
+  alignment) — both pinned via `# renovate:` markers in `Makefile` and run via
+  `npx --yes <tool>@<version>`
+- **JSON**: `jq` preferred for validation; falls back to pinned `jsonlint` via
+  `npx` when `jq` is not installed
+- **EditorConfig**: `editorconfig-checker` (downloaded by
+  `.github/install_editorconfig-checker.sh` to `$XDG_BIN_HOME` / `$HOME/bin` /
+  `/usr/local/bin` / `./bin` when no system binary exists; pinned release tag
+  via `EDITORCONFIG_CHECKER_VERSION`)
 
-The linting system automatically downloads missing tools and follows XDG standards for installation.
+`make install-tools` only ensures `jq` is present; the npm-based tools
+materialise on demand via `npx`, and `editorconfig-checker` is fetched the
+first time `make lint-editorconfig` runs without a system binary.
 
 #### Manual Fish Commands
 
@@ -222,6 +233,11 @@ nvm_version_status
 
 ### Tool Installation
 
-- Missing linting tools are automatically installed during `make install-tools`
-- Installation respects XDG standards: `$XDG_BIN_HOME` → `$HOME/bin` → `/usr/local/bin`
-- Uses secure temporary directories (`mktemp`) for downloads
+- npm-based linters (`markdownlint-cli`, `jsonlint`, `markdown-table-formatter`)
+  are not installed globally — they are pinned in `Makefile` via `# renovate:`
+  markers and invoked through `npx --yes <tool>@<version>`
+- `make install-tools` only installs `jq` (used as the preferred JSON validator)
+- `editorconfig-checker` is downloaded by
+  `.github/install_editorconfig-checker.sh` when no system binary exists; the
+  installer respects XDG standards (`$XDG_BIN_HOME` → `$HOME/bin` →
+  `/usr/local/bin` → `./bin` fallback) and uses `mktemp` for staging

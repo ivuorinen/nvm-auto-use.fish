@@ -257,7 +257,7 @@ function _nvm_doctor_check_config -d "Validate configuration"
     echo "Configuration variables:"
 
     # Check debounce setting
-    set -l debounce (_nvm_auto_use_get_debounce 2>/dev/null)
+    set -l debounce (nvm_auto_use_config get debounce 2>/dev/null)
     if test -n "$debounce"
         echo "   ✅ Debounce: "$debounce"ms"
     else
@@ -265,7 +265,7 @@ function _nvm_doctor_check_config -d "Validate configuration"
     end
 
     # Check excluded directories
-    set -l excluded (_nvm_auto_use_get_excluded_dirs 2>/dev/null)
+    set -l excluded (nvm_auto_use_config get excluded 2>/dev/null)
     echo "   ✅ Excluded dirs: $excluded"
 
     # Check auto-install setting
