@@ -36,13 +36,13 @@ function nvm_compat_use -a manager version -d "Use specified version with detect
 
     switch $manager
         case nvm
-            nvm use $version
+            nvm use $version; or return $status
         case fnm
-            fnm use $version
+            fnm use $version; or return $status
         case volta
-            volta pin node@$version
+            volta pin node@$version; or return $status
         case asdf
-            asdf local nodejs $version
+            asdf local nodejs $version; or return $status
         case '*'
             echo "Unsupported manager: $manager"
             return 1
@@ -57,13 +57,13 @@ function nvm_compat_install -a manager version -d "Install specified version wit
 
     switch $manager
         case nvm
-            nvm install $version
+            nvm install $version; or return $status
         case fnm
-            fnm install $version
+            fnm install $version; or return $status
         case volta
-            volta install node@$version
+            volta install node@$version; or return $status
         case asdf
-            asdf install nodejs $version
+            asdf install nodejs $version; or return $status
         case '*'
             echo "Unsupported manager: $manager"
             return 1

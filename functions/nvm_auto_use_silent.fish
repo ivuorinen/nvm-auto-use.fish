@@ -13,7 +13,7 @@ function nvm_auto_use_silent -d "Enable or disable silent mode for nvm-auto-use"
             set -g _nvm_auto_use_silent 1
             echo "Silent mode enabled"
         case off disable false 0
-            set -e _nvm_auto_use_silent
+            set -e -g _nvm_auto_use_silent
             echo "Silent mode disabled"
         case '*'
             echo "Usage: nvm_auto_use_silent [on|off]"

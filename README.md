@@ -44,12 +44,16 @@ fisher install ivuorinen/nvm-auto-use.fish
 - Manager preference selection
 - Project-only activation mode
 
-### 🔔 **Developer Tools**
+### 🔔 **Advanced Developer Tools**
 
+- **Security features**: Version validation, CVE checking, policy enforcement
+- **Smart recommendations**: Intelligent version suggestions and upgrade paths
+- **Comprehensive diagnostics**: `nvm_doctor` for troubleshooting and health checks
+- **Performance optimization**: XDG-compliant caching with TTL, async operations
+- **Error recovery**: Graceful degradation and fallback mechanisms
 - Desktop notifications for version switches
 - Environment variable export (`NODE_VERSION`)
-- Fish shell completions
-- Detailed status reporting
+- Fish shell completions and detailed status reporting
 
 ## Quick Start
 
@@ -102,6 +106,47 @@ nvm_auto_use_config reset
 | `.tool-versions` | Tool + version | `nodejs 18.17.0` |
 | `package.json` | engines.node field | `"engines": {"node": ">=16.0.0"}` |
 
+## Advanced Features
+
+### Security & Validation
+
+```fish
+# Security audit and validation
+nvm_security audit                    # Comprehensive security check
+nvm_security check_version "18.17.0"  # Validate version format
+nvm_security policy set min_version "16.0.0"  # Set minimum version policy
+```
+
+### Smart Recommendations
+
+```fish
+# Get intelligent recommendations
+nvm_recommendations suggest_version new_project  # Project-specific suggestions
+nvm_recommendations upgrade_path                 # Plan safe upgrades
+nvm_recommendations security_update              # Security-focused updates
+```
+
+### Diagnostics & Troubleshooting
+
+```fish
+# Comprehensive system diagnostics
+nvm_doctor check           # Full health check
+nvm_doctor managers        # Check version manager status
+nvm_doctor security        # Security audit
+nvm_doctor fix all         # Auto-fix common issues
+```
+
+### Performance & Caching
+
+```fish
+# Cache management (XDG-compliant)
+nvm_cache stats            # View cache statistics
+nvm_cache clear            # Clear all cached data
+
+# Async operations for better performance
+nvm_async version_check "file"  # Non-blocking version checks
+```
+
 ## Utility Functions
 
 ```fish
@@ -126,6 +171,45 @@ nvm_compat_detect
     - [fnm](https://github.com/Schniz/fnm)
     - [volta](https://volta.sh/)
     - [asdf](https://asdf-vm.com/) with nodejs plugin
+
+## Development
+
+### Contributing
+
+This project uses comprehensive linting and code quality tools:
+
+```bash
+# Install development tools
+make install-tools
+
+# Run all linting checks
+make lint
+
+# Fix auto-fixable issues
+make lint-fix
+
+# Test plugin installation
+make test
+```
+
+### Code Quality
+
+- **Fish shell**: Automatic formatting with `fish_indent`
+- **Markdown**: Style checking with `markdownlint`
+- **JSON**: Syntax validation with `jsonlint`/`jq`
+- **EditorConfig**: Compliance checking with `editorconfig-checker`
+
+All tools are automatically installed if missing, following XDG directory standards.
+
+### GitHub Actions
+
+The project includes CI/CD workflows that automatically:
+
+- Run all linting checks on push/PR
+- Test plugin installation in clean environments
+- Ensure code quality standards are maintained
+
+See [CLAUDE.md](CLAUDE.md) for detailed development guidelines.
 
 ## Uninstall
 

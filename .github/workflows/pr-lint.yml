@@ -7,13 +7,12 @@ on:
   pull_request:
     branches: [ master, main ]
 
-permissions:
-  contents: read
-  packages: read
-  statuses: write
-
 jobs:
   Lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
     steps:
       - uses: ivuorinen/actions/pr-lint@84380fe01733b915ffea5892083ee636ed2b765a # v2026.05.04

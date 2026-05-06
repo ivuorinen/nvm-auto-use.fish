@@ -8,13 +8,18 @@ function nvm_notify -a message -d "Send notification for Node.js version changes
         return
     end
 
-    # Try different notification methods
-    if command -q osascript # macOS
+    # Try different notification methods until one succeeds
+    if command -q osascript
         osascript -e "display notification \"$message\" with title \"nvm-auto-use\""
-    else if command -q notify-send # Linux
+        return
+    end
+    if command -q notify-send
         notify-send nvm-auto-use "$message"
-    else if command -q terminal-notifier # macOS alternative
+        return
+    end
+    if command -q terminal-notifier
         terminal-notifier -title nvm-auto-use -message "$message"
+        return
     end
 end
 
