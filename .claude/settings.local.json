@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(fish_indent:*)",
+      "Bash(find:*)",
+      "Bash(make lint-fish:*)",
+      "Bash(make lint-json:*)",
+      "Bash(make lint-markdown:*)",
+      "Bash(make lint-fix:*)",
+      "Bash(make lint:*)"
+    ],
+    "deny": []
+  }
+}

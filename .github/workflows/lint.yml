@@ -1,0 +1,47 @@
+name: Lint
+
+on:
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main, develop]
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        name: Lint codebase
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+            - name: Setup Node.js
+              uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+              with:
+                  node-version: '18'
+                  cache: 'npm'
+
+            - name: Setup Fish shell
+              run: |
+                  sudo apt-add-repository ppa:fish-shell/release-3
+                  sudo apt-get update
+                  sudo apt-get install -y fish
+
+            - name: Install linting tools
+              run: make install-tools
+
+            - name: Lint Fish files
+              run: make lint-fish
+
+            - name: Lint Markdown files
+              run: make lint-markdown
+
+            - name: Lint JSON files
+              run: make lint-json
+
+            - name: Test plugin installation
+              shell: fish {0}
+              run: |
+                  curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+                  fisher --version
+                  make test
