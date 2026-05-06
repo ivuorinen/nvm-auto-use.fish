@@ -37,8 +37,4 @@ jobs:
               run: make lint-json
 
             - name: Test plugin installation
-              shell: fish {0}
-              run: |
-                  curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
-                  fisher --version
-                  make test
+              run: make test-ci

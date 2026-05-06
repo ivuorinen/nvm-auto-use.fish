@@ -53,6 +53,9 @@ fish -n functions/*.fish completions/*.fish
 ```bash
 # Test plugin installation using Makefile
 make test
+
+# Test plugin installation in CI environment
+make test-ci
 ```
 
 #### Manual Installation Commands

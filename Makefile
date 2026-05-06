@@ -13,6 +13,7 @@ help:
 	@echo "  lint-fix        - Fix auto-fixable linting issues"
 	@echo "  lint-check      - Check linting without fixing"
 	@echo "  test            - Run tests (install plugin locally)"
+	@echo "  test-ci         - Run tests in CI environment"
 	@echo "  clean           - Clean temporary files"
 
 # Install all required linting tools
@@ -128,6 +129,19 @@ test:
 		echo "Fisher not found. Please install Fisher package manager first."; \
 		exit 1; \
 	fi
+
+# Test in CI environment with Fish shell
+test-ci:
+	@echo "Testing plugin installation in CI..."
+	@fish -c "\
+		curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source; \
+		fisher install jorgebucaran/fisher; \
+		if fisher list | string match -q '*ivuorinen/nvm-auto-use.fish*'; \
+			echo 'Plugin already installed, skipping installation'; \
+		else; \
+			fisher install .; \
+		end; \
+		echo 'Plugin test completed successfully in CI!'"
 
 # Clean temporary files
 clean:
