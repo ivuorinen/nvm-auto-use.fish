@@ -93,6 +93,9 @@ nvm_auto_use_config debounce 1000
 nvm_auto_use_config exclude "build"
 nvm_auto_use_config exclude "dist"
 
+# Only switch versions inside Node.js project directories
+nvm_auto_use_config project_only on
+
 # Reset all settings
 nvm_auto_use_config reset
 ```
