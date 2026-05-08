@@ -69,6 +69,11 @@ end
 function _nvm_security_check_vulnerabilities -d "Check version for known vulnerabilities"
     set -l node_version $argv[1]
 
+    if test -z "$node_version"
+        echo "⚠️  No version specified for CVE check" >&2
+        return 1
+    end
+
     # Cache key for CVE data
     set -l cache_key "cve_check_"(_nvm_security_hash "$node_version")
 
@@ -103,11 +108,13 @@ function _nvm_security_check_vulnerabilities -d "Check version for known vulnera
 end
 
 function _nvm_security_online_cve_check -d "Perform online CVE check"
-    # Best-effort online check. Greppling HTML for the version string is too
+    # Best-effort online check. Grepping HTML for the version string is too
     # noisy to reliably classify a version as vulnerable/safe (e.g. ranges
     # like "< 18.2.0" or benign "fixed in" mentions trip plain substring
-    # matches). Until a structured advisory feed is wired up, persist
-    # `unknown` and surface the curl failure when the network is unreachable.
+    # matches). Until a structured advisory feed is wired up, always persist
+    # `unknown` regardless of the HTTP response.
+    # TODO: wire up a structured JSON advisory feed (e.g. https://nodejs.org/dist/index.json)
+    # to provide real vulnerability verdicts instead of always returning `unknown`.
     set -l node_version $argv[1]
     set -l cache_key $argv[2]
 
@@ -136,16 +143,17 @@ function _nvm_security_validate_source -d "Validate version file source"
         # A bit-2 in either octet means write permission.
         set -l other_digit (string sub -s -1 -- $perm)
         set -l group_digit (string sub -s -2 -l 1 -- $perm)
-        if test (math "$other_digit % 4 / 2") -eq 1
+        # Write bit is set when (digit % 4) >= 2 (covers digits 2, 3, 6, 7).
+        if test (math "$other_digit % 4") -ge 2
             echo "⚠️  Insecure permissions on $source_file (world-writable, mode $perm)" >&2
-        else if test (math "$group_digit % 4 / 2") -eq 1
+        else if test (math "$group_digit % 4") -ge 2
             echo "⚠️  Insecure permissions on $source_file (group-writable, mode $perm)" >&2
         end
     end
 
     # Check for suspicious content
-    set -l content (cat "$source_file")
-    if string match -qr '[;&|`$(){}[\]<>]' "$content"
+    set -l content (string collect < "$source_file")
+    if string match -qr '[;&|`$()[\]<>]' "$content"
         echo "🚨 Suspicious content in $source_file" >&2
         return 1
     end

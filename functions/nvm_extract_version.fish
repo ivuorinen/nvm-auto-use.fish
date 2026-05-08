@@ -18,7 +18,8 @@ function nvm_extract_version -a file_path -d "Extract Node.js version from vario
             if command -q jq
                 set -l node_version (jq -r '.engines.node // empty' "$actual_file" 2>/dev/null)
                 if test -n "$node_version" -a "$node_version" != null
-                    # Handle version ranges - extract first valid version
+                    # Collapse semver range to first numeric component (e.g. ">=18.0.0" → "18.0.0").
+                    # Caller rejects the result if the manager cannot install an underspecified version.
                     set node_version (string replace -r '^[^0-9]*([0-9]+\.?[0-9]*\.?[0-9]*).*' '$1' "$node_version")
                     echo "$node_version"
                     return 0
@@ -26,14 +27,14 @@ function nvm_extract_version -a file_path -d "Extract Node.js version from vario
             end
         case nodejs
             # Extract from .tool-versions nodejs line
-            set -l node_version (grep '^nodejs ' "$actual_file" | cut -d' ' -f2 | string trim)
+            set -l node_version (string match -r '^nodejs\s+\S+' < "$actual_file" | string replace -r '^nodejs\s+' '' | string trim)
             if test -n "$node_version"
                 echo "$node_version"
                 return 0
             end
         case '*'
             # Standard .nvmrc or .node-version file
-            set -l node_version (cat "$actual_file" | string trim)
+            set -l node_version (string trim < "$actual_file")
             if test -n "$node_version"
                 # Strip leading 'v'
                 set node_version (string replace -r '^v' '' "$node_version")

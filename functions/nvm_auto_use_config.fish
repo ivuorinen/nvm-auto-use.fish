@@ -17,6 +17,8 @@ function nvm_auto_use_config -d "Configure nvm-auto-use settings"
             _nvm_auto_use_config_include $argv[2]
         case manager
             _nvm_auto_use_config_manager $argv[2]
+        case project_only
+            _nvm_auto_use_config_project_only $argv[2]
         case reset
             _nvm_auto_use_config_reset
         case get
@@ -31,7 +33,7 @@ function nvm_auto_use_config -d "Configure nvm-auto-use settings"
                     return 1
             end
         case '*'
-            echo "Usage: nvm_auto_use_config [auto_install|silent|debounce|exclude|include|manager|reset|get] [value]"
+            echo "Usage: nvm_auto_use_config [auto_install|silent|project_only|debounce|exclude|include|manager|reset|get] [value]"
             return 1
     end
 end
@@ -40,6 +42,7 @@ function _nvm_auto_use_config_show
     echo "nvm-auto-use configuration:"
     echo "  auto_install: "(test -n "$_nvm_auto_use_no_install"; and echo "disabled"; or echo "enabled")
     echo "  silent: "(test -n "$_nvm_auto_use_silent"; and echo "enabled"; or echo "disabled")
+    echo "  project_only: "(test -n "$_nvm_auto_use_project_only"; and echo "enabled"; or echo "disabled")
     echo "  debounce_ms: "(_nvm_auto_use_get_debounce)
     echo "  excluded_dirs: "(_nvm_auto_use_get_excluded_dirs)
     echo "  preferred_manager: "(test -n "$_nvm_auto_use_preferred_manager"; and echo "$_nvm_auto_use_preferred_manager"; or echo "auto-detect")
@@ -77,7 +80,7 @@ end
 
 function _nvm_auto_use_config_debounce
     set -l value $argv[1]
-    if test -n "$value" -a (string match -r '^[0-9]+$' "$value")
+    if test -n "$value"; and string match -qr '^[0-9]+$' -- "$value"
         set -g _nvm_auto_use_debounce_ms $value
         echo "Debounce set to $value ms"
     else
@@ -113,6 +116,21 @@ function _nvm_auto_use_config_include
     end
 end
 
+function _nvm_auto_use_config_project_only
+    set -l value $argv[1]
+    switch $value
+        case on enable true 1
+            set -g _nvm_auto_use_project_only 1
+            echo "Project-only mode enabled"
+        case off disable false 0
+            set -e _nvm_auto_use_project_only
+            echo "Project-only mode disabled"
+        case '*'
+            echo "Usage: nvm_auto_use_config project_only [on|off]"
+            return 1
+    end
+end
+
 function _nvm_auto_use_config_manager
     set -l value $argv[1]
     if test -n "$value"
@@ -132,6 +150,7 @@ end
 function _nvm_auto_use_config_reset
     set -e _nvm_auto_use_no_install
     set -e _nvm_auto_use_silent
+    set -e _nvm_auto_use_project_only
     set -e _nvm_auto_use_debounce_ms
     set -e _nvm_auto_use_excluded_dirs
     set -e _nvm_auto_use_preferred_manager

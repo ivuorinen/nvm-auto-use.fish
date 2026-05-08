@@ -22,7 +22,10 @@ function nvm_auto_use --on-variable PWD
         end
     end
 
-    # Export NODE_VERSION environment variable if available
+    # Export NODE_VERSION from the currently active binary. This snapshot is
+    # intentionally early — after a successful version switch at the end of
+    # this function, NODE_VERSION is updated again. Any subshell launched
+    # between here and the switch sees the pre-switch value.
     if command -q node
         set -gx NODE_VERSION (node -v 2>/dev/null | string replace -r '^v' '')
     end
@@ -132,7 +135,7 @@ function _nvm_auto_use_switch_version
     set -g _nvm_auto_use_cached_version "$node_version"
     set -l current_version
     if command -q node
-        set current_version (node -v 2>/dev/null | sed 's/v//')
+        set current_version (node -v 2>/dev/null | string replace -r '^v' '')
     end
     if test "$node_version" != "$current_version"
         if not set -q _nvm_auto_use_silent
