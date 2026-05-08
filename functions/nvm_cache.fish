@@ -61,7 +61,7 @@ function _nvm_cache_get -d "Get cache value by key, respecting TTL"
         return 1
     end
 
-    cat "$cache_file"
+    string collect <"$cache_file"
     return 0
 end
 
@@ -98,7 +98,11 @@ function _nvm_cache_stats -d "Show cache statistics"
     set -l cache_dir (_nvm_cache_dir)
     if test -d "$cache_dir"
         echo "Cache directory: $cache_dir"
-        echo "Cache files: "(find "$cache_dir" -type f 2>/dev/null | wc -l | string trim)
+        if command -q fd
+            echo "Cache files: "(count (fd --type f . "$cache_dir" 2>/dev/null))
+        else
+            echo "Cache files: "(count (find "$cache_dir" -type f 2>/dev/null))
+        end
         echo "Cache size: "(du -sh "$cache_dir" 2>/dev/null | cut -f1)
     else
         echo "No cache directory found"

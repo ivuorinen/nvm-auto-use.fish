@@ -53,43 +53,37 @@ function _nvm_doctor_full_check -d "Run comprehensive diagnostic check"
     # Manager check
     echo "🔧 Version Manager Status"
     echo -------------------------
-    _nvm_doctor_check_managers
-    set issues (math "$issues + $status")
+    _nvm_doctor_check_managers; or set issues (math "$issues + 1")
     echo
 
     # Configuration check
     echo "⚙️  Configuration Status"
     echo ------------------------
-    _nvm_doctor_check_config
-    set issues (math "$issues + $status")
+    _nvm_doctor_check_config; or set issues (math "$issues + 1")
     echo
 
     # Permissions check
     echo "🔐 Permissions Check"
     echo -------------------
-    _nvm_doctor_check_permissions
-    set issues (math "$issues + $status")
+    _nvm_doctor_check_permissions; or set issues (math "$issues + 1")
     echo
 
     # Cache check
     echo "🗄️  Cache Status"
     echo ----------------
-    _nvm_doctor_check_cache
-    set issues (math "$issues + $status")
+    _nvm_doctor_check_cache; or set issues (math "$issues + 1")
     echo
 
     # Security audit
     echo "🔒 Security Audit"
     echo -----------------
-    _nvm_doctor_security_audit
-    set issues (math "$issues + $status")
+    _nvm_doctor_security_audit; or set issues (math "$issues + 1")
     echo
 
     # Performance check
     echo "⚡ Performance Analysis"
     echo ----------------------
-    _nvm_doctor_performance_check
-    set issues (math "$issues + $status")
+    _nvm_doctor_performance_check; or set issues (math "$issues + 1")
     echo
 
     # Summary
@@ -123,7 +117,7 @@ function _nvm_doctor_system_info -d "Display system information"
         echo "npm: Not available"
     end
 
-    echo "PATH entries: "(echo $PATH | string split ':' | wc -l)
+    echo "PATH entries: "(count $PATH)
     echo "Current directory: "(pwd)
 end
 
@@ -311,7 +305,12 @@ function _nvm_doctor_check_cache -d "Check cache status and health"
     end
 
     if test -d "$cache_dir"
-        set -l cache_files (find "$cache_dir" -type f 2>/dev/null)
+        set -l cache_files
+        if command -q fd
+            set cache_files (fd --type f . "$cache_dir" 2>/dev/null)
+        else
+            set cache_files (find "$cache_dir" -type f 2>/dev/null)
+        end
 
         for cache_file in $cache_files
             if test -s "$cache_file"
@@ -322,9 +321,14 @@ function _nvm_doctor_check_cache -d "Check cache status and health"
         end
 
         # Check for very old cache files
-        set -l old_files (find "$cache_dir" -type f -mtime +7 2>/dev/null)
+        set -l old_files
+        if command -q fd
+            set old_files (fd --type f --changed-before 7days . "$cache_dir" 2>/dev/null)
+        else
+            set old_files (find "$cache_dir" -type f -mtime +7 2>/dev/null)
+        end
         if test -n "$old_files"
-            echo "   ℹ️  Found "(echo "$old_files" | wc -l)" cache files older than 7 days"
+            echo "   ℹ️  Found "(count (string split '\n' "$old_files"))" cache files older than 7 days"
         end
     else
         echo "   ℹ️  No cache directory found"
@@ -351,7 +355,12 @@ function _nvm_doctor_performance_check -d "Analyze performance issues"
     end
 
     if test -d "$cache_dir"
-        set -l cache_count (find "$cache_dir" -type f 2>/dev/null | wc -l)
+        set -l cache_count
+        if command -q fd
+            set cache_count (count (fd --type f . "$cache_dir" 2>/dev/null))
+        else
+            set cache_count (count (find "$cache_dir" -type f 2>/dev/null))
+        end
         if test $cache_count -gt 100
             echo "   ⚠️  Large number of cache files ($cache_count) - consider cleanup"
             set issues (math "$issues + 1")
@@ -371,7 +380,7 @@ function _nvm_doctor_performance_check -d "Analyze performance issues"
     end
 
     # Check for deep directory nesting
-    set -l depth (echo "$current_path" | string replace -a '/' '\n' | wc -l)
+    set -l depth (count (string split '/' "$current_path"))
     if test $depth -gt 15
         echo "   ⚠️  Deep directory nesting may slow file searches: $depth levels"
         set issues (math "$issues + 1")
