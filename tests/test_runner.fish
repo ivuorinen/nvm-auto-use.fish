@@ -154,18 +154,14 @@ function setup_test_env -d "Set up test environment"
 
     cd "$TEST_DIR"
 
-    set -g TEST_FIXTURES "$script_dir/fixtures"
-
-    # Link or copy test fixtures from tests/fixtures
-    if test -d "$TEST_FIXTURES"
-        cp -R "$TEST_FIXTURES" "$TEST_DIR/fixtures"
-    else
-        mkdir -p "$TEST_FIXTURES"
-        echo "18.17.0" >"$TEST_FIXTURES/.nvmrc"
-        echo "16.20.0" >"$TEST_FIXTURES/.node-version"
-        echo "nodejs 20.5.0" >"$TEST_FIXTURES/.tool-versions"
-        echo '{"engines": {"node": ">=18.0.0"}}' >"$TEST_FIXTURES/package.json"
-    end
+    # Always create fresh fixtures in the temp dir; never rely on a cached
+    # tests/fixtures/ directory that may carry stale state from prior runs.
+    set -g TEST_FIXTURES "$TEST_DIR/fixtures"
+    mkdir -p "$TEST_FIXTURES"
+    echo "18.17.0" >"$TEST_FIXTURES/.nvmrc"
+    echo "16.20.0" >"$TEST_FIXTURES/.node-version"
+    echo "nodejs 20.5.0" >"$TEST_FIXTURES/.tool-versions"
+    echo '{"engines": {"node": ">=18.0.0"}}' >"$TEST_FIXTURES/package.json"
 
     echo "🔧 Test environment set up in $TEST_DIR"
 end

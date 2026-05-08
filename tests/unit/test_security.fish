@@ -89,24 +89,23 @@ end
 function test_source_validation
     echo "Testing source file validation..."
 
-    # Create test files
-    echo "18.17.0" >test_nvmrc
-    echo "18.0.0; touch /tmp/nvm-auto-use-malicious-test" >malicious_nvmrc
+    # Create test files in isolated temp dir (not the working directory)
+    set -l valid_nvmrc "$TEST_DIR/test_nvmrc"
+    set -l bad_nvmrc "$TEST_DIR/malicious_nvmrc"
+    echo "18.17.0" >"$valid_nvmrc"
+    echo "18.0.0; touch /tmp/nvm-auto-use-malicious-test" >"$bad_nvmrc"
 
     # Test valid source
-    nvm_security validate_source test_nvmrc
+    nvm_security validate_source "$valid_nvmrc"
     and echo "✅ Valid source file accepted"
     or echo "❌ Valid source file rejected"
 
     # Test malicious source
-    nvm_security validate_source malicious_nvmrc
+    nvm_security validate_source "$bad_nvmrc"
     set -l status_code $status
     test $status_code -ne 0
     and echo "✅ Malicious source file rejected"
     or echo "❌ Malicious source file accepted"
-
-    # Cleanup
-    rm -f test_nvmrc malicious_nvmrc
 
     return 0
 end
@@ -114,17 +113,21 @@ end
 function test_vulnerability_check
     echo "Testing vulnerability checking..."
 
-    # Test known vulnerable version (if any in our test data)
-    nvm_security check_cve "16.0.0"
+    # The CVE check is best-effort: the offline list is intentionally sparse
+    # and the online check always returns "unknown" (see _nvm_security_online_cve_check).
+    # We test that the function returns without crashing and produces output,
+    # not that it classifies a specific version correctly.
+    set -l output (nvm_security check_cve "18.17.0" 2>&1)
+    test -n "$output"
+    and echo "✅ CVE check runs and produces output"
+    or echo "❌ CVE check produced no output"
+
+    # Calling with an empty version string should return 1 (invalid input)
+    nvm_security check_cve ""
     set -l status_code $status
     test $status_code -ne 0
-    and echo "✅ Known vulnerable version flagged"
-    or echo "ℹ️  No vulnerability data for test version"
-
-    # Test presumably safe version
-    nvm_security check_cve "18.17.0"
-    and echo "✅ Safe version check completed"
-    or echo "ℹ️  Vulnerability check completed with warnings"
+    and echo "✅ Empty version string rejected by CVE check"
+    or echo "❌ Empty version string incorrectly accepted by CVE check"
 
     return 0
 end

@@ -76,11 +76,30 @@ function test_config_manager
     assert_not_equals "$_nvm_auto_use_preferred_manager" invalid "Invalid manager not set"
 end
 
+function test_config_project_only
+    echo "Testing _nvm_auto_use_config_project_only..."
+
+    _nvm_auto_use_config_project_only on
+    test -n "$_nvm_auto_use_project_only"
+    and echo "✅ Project-only mode enabled"
+    or echo "❌ Project-only enable failed"
+
+    _nvm_auto_use_config_project_only off
+    test -z "$_nvm_auto_use_project_only"
+    and echo "✅ Project-only mode disabled"
+    or echo "❌ Project-only disable failed"
+
+    _nvm_auto_use_config_project_only invalid
+    and echo "❌ Invalid value should have returned error"
+    or echo "✅ Invalid value returns error"
+end
+
 function test_config_reset
     echo "Testing _nvm_auto_use_config_reset..."
 
     set -g _nvm_auto_use_no_install 1
     set -g _nvm_auto_use_silent 1
+    set -g _nvm_auto_use_project_only 1
     set -g _nvm_auto_use_debounce_ms 999
     set -g _nvm_auto_use_excluded_dirs foo
     set -g _nvm_auto_use_preferred_manager nvm
@@ -89,6 +108,7 @@ function test_config_reset
 
     test -z "$_nvm_auto_use_no_install"
     and test -z "$_nvm_auto_use_silent"
+    and test -z "$_nvm_auto_use_project_only"
     and test -z "$_nvm_auto_use_debounce_ms"
     and test -z "$_nvm_auto_use_excluded_dirs"
     and test -z "$_nvm_auto_use_preferred_manager"
@@ -97,13 +117,28 @@ function test_config_reset
 end
 
 function main
-    test_config_show
-    test_config_auto_install
-    test_config_silent
-    test_config_debounce
-    test_config_exclude_include
-    test_config_manager
-    test_config_reset
+    setup_test_env
+
+    set -l failed 0
+
+    test_config_show; or set failed (math "$failed + 1")
+    test_config_auto_install; or set failed (math "$failed + 1")
+    test_config_silent; or set failed (math "$failed + 1")
+    test_config_project_only; or set failed (math "$failed + 1")
+    test_config_debounce; or set failed (math "$failed + 1")
+    test_config_exclude_include; or set failed (math "$failed + 1")
+    test_config_manager; or set failed (math "$failed + 1")
+    test_config_reset; or set failed (math "$failed + 1")
+
+    cleanup_test_env
+
+    if test $failed -eq 0
+        echo "All config helper tests passed!"
+        return 0
+    else
+        echo "$failed config helper test(s) failed"
+        return 1
+    end
 end
 
 main
