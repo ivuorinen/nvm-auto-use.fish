@@ -96,20 +96,20 @@ lint-markdown:
 			}
 	@echo "Markdown files passed linting!"
 
-# Verify Markdown tables are formatted (column-aligned). markdown-table-formatter
-# reads stdin and exits 1 in --check mode when reformatting would change output.
+# Verify Markdown tables are formatted (column-aligned).
+# markdown-table-formatter takes file args (modifies in-place); --check exits
+# 1 when any file would change.
 lint-md-tables:
 	@echo "Checking Markdown table formatting..."
-	@status=0; \
-	for file in $$(find . -name '*.md' -type f \
+	@files=$$(find . -name '*.md' -type f \
 		-not -path './node_modules/*' \
-		-not -path './docs/audit/*'); do \
-		echo "Checking $$file..."; \
+		-not -path './docs/audit/*' \
+		-not -path './.claude/rules/*'); \
+	if [ -n "$$files" ]; then \
 		npx --yes markdown-table-formatter@$(MARKDOWN_TABLE_FORMATTER_VERSION) \
-			--check <"$$file" >/dev/null \
-			|| { echo "Table formatting issue in $$file"; status=1; }; \
-	done; \
-	exit $$status
+			--check $$files \
+		|| { echo "Markdown tables need formatting"; exit 1; }; \
+	fi
 	@echo "Markdown tables passed formatting check!"
 
 # Lint JSON files
@@ -164,17 +164,14 @@ lint-fix:
 			--config .markdownlint.json --fix 2>/dev/null \
 		|| true
 	@echo "Aligning Markdown tables..."
-	@for file in $$(find . -name '*.md' -type f \
+	@files=$$(find . -name '*.md' -type f \
 		-not -path './node_modules/*' \
-		-not -path './docs/audit/*'); do \
-		tmp=$$(mktemp); \
-		if npx --yes markdown-table-formatter@$(MARKDOWN_TABLE_FORMATTER_VERSION) \
-				<"$$file" >"$$tmp" 2>/dev/null; then \
-			mv "$$tmp" "$$file"; \
-		else \
-			rm -f "$$tmp"; \
-		fi; \
-	done
+		-not -path './docs/audit/*' \
+		-not -path './.claude/rules/*'); \
+	if [ -n "$$files" ]; then \
+		npx --yes markdown-table-formatter@$(MARKDOWN_TABLE_FORMATTER_VERSION) \
+			$$files 2>/dev/null || true; \
+	fi
 	@echo "Linting fixes applied!"
 
 # Check linting without fixing
