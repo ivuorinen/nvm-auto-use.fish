@@ -96,7 +96,7 @@ function _nvm_async_wait -d "Wait for async job with timeout"
     # Wait for job with timeout
     set -l count 0
     while test $count -lt (math "$timeout * 10")
-        if not jobs -p | grep -q "^$job_id\$"
+        if not jobs -p | string match -qr "^$job_id\$"
             return 0
         end
         sleep 0.1

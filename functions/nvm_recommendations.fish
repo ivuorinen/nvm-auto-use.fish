@@ -270,19 +270,19 @@ end
 
 function _nvm_detect_project_type -d "Detect project type from files"
     if test -f "package.json"
-        set -l deps (cat package.json 2>/dev/null)
+        set -l deps (string collect < package.json 2>/dev/null)
 
-        if echo "$deps" | grep -q '"react"'
+        if string match -q '*"react"*' $deps
             echo react
-        else if echo "$deps" | grep -q '"vue"'
+        else if string match -q '*"vue"*' $deps
             echo vue
-        else if echo "$deps" | grep -q '"@angular"'
+        else if string match -q '*"@angular"*' $deps
             echo angular
-        else if echo "$deps" | grep -q '"next"'
+        else if string match -q '*"next"*' $deps
             echo nextjs
-        else if echo "$deps" | grep -q '"typescript"'
+        else if string match -q '*"typescript"*' $deps
             echo typescript
-        else if echo "$deps" | grep -q '"express"\|"fastify"\|"koa"'
+        else if string match -qr '"express"|"fastify"|"koa"' $deps
             echo backend
         else
             echo node
@@ -305,7 +305,7 @@ function _nvm_analyze_version_constraints -d "Analyze existing version constrain
 
     # Check .nvmrc
     if test -f ".nvmrc"
-        set -l nvmrc_version (cat .nvmrc | string trim)
+        set -l nvmrc_version (string trim < .nvmrc)
         set constraints $constraints ".nvmrc: $nvmrc_version"
     end
 

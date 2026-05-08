@@ -138,18 +138,21 @@ function _nvm_error_recovery_suggest_versions -d "Suggest similar available vers
     set -l available_versions
     switch $manager
         case nvm
-            set available_versions (nvm list-remote 2>/dev/null | grep "^v$major\." | head -n 5)
+            set available_versions (nvm list-remote 2>/dev/null \
+                | string match -r "^v$major\." | head -n 5)
         case fnm
-            set available_versions (fnm list-remote 2>/dev/null | grep "^v$major\." | head -n 5)
+            set available_versions (fnm list-remote 2>/dev/null \
+                | string match -r "^v$major\." | head -n 5)
         case asdf
-            set available_versions (asdf list-all nodejs 2>/dev/null | grep "^$major\." | head -n 5)
+            set available_versions (asdf list-all nodejs 2>/dev/null \
+                | string match -r "^$major\." | head -n 5)
         case volta
             # Volta resolves versions on demand and lacks a list-remote
             # subcommand; surface no suggestions rather than guessing.
             set available_versions
     end
 
-    echo "$available_versions" | string join ' '
+    string join ' ' $available_versions
 end
 
 function _nvm_error_recovery_log -d "Log error for debugging"
