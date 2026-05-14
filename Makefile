@@ -15,9 +15,11 @@ MARKDOWN_TABLE_FORMATTER_VERSION := 1.7.0
 # renovate: datasource=github-releases depName=editorconfig-checker/editorconfig-checker
 EDITORCONFIG_CHECKER_VERSION := v3.6.1
 
-.PHONY: help install-tools lint lint-fish lint-markdown lint-md-tables \
+.PHONY: all help install-tools lint lint-fish lint-markdown lint-md-tables \
 	lint-json lint-fix lint-check lint-editorconfig test test-ci \
 	test-unit test-integration clean
+
+all: lint test-unit
 
 # Default target
 help:
@@ -73,7 +75,8 @@ lint-fish:
 			echo "Formatting issues found in $$1"; exit 1; }' \
 		sh {} \;
 	@echo "Validating Fish syntax..."
-	@fish -n functions/*.fish completions/*.fish 2>/dev/null || { \
+	@find . -name "*.fish" -type f -not -path '*/node_modules/*' \
+		| xargs fish -n || { \
 		echo "Syntax errors found in Fish files"; \
 		exit 1; \
 	}
@@ -143,9 +146,10 @@ lint-editorconfig:
 		ec; \
 	else \
 		echo "Installing editorconfig-checker $(EDITORCONFIG_CHECKER_VERSION)..."; \
-		EC_VERSION='$(EDITORCONFIG_CHECKER_VERSION)' \
+		EDITORCONFIG_CHECKER_VERSION='$(EDITORCONFIG_CHECKER_VERSION)' \
 			.github/install_editorconfig-checker.sh; \
-		PATH="$$PWD/bin:$$PATH" editorconfig-checker; \
+		_ec_path="$$PWD/bin:$$HOME/bin:$${XDG_BIN_HOME:-$$HOME/bin}"; \
+		PATH="$$_ec_path:$$PATH" editorconfig-checker; \
 	fi
 	@echo "EditorConfig compliance passed!"
 
