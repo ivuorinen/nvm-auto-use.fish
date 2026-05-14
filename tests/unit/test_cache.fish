@@ -10,6 +10,7 @@ function test_cache_basic_operations
     nvm_cache set test_key test_value
     set -l result (nvm_cache get "test_key")
     assert_equals "$result" test_value "Cache set and get works"
+    or return 1
 
     # Test delete
     nvm_cache delete test_key
@@ -60,6 +61,7 @@ function test_cache_stats
     # Get stats
     set -l stats (nvm_cache stats)
     assert_contains "$stats" "Cache files: 2" "Cache stats shows correct file count"
+    or return 1
 
     return 0
 end
@@ -71,10 +73,12 @@ function test_cache_key_generation
     set -l key1 (_nvm_cache_key "test_file.txt")
     set -l key2 (_nvm_cache_key "test_file.txt")
     assert_equals "$key1" "$key2" "Same file generates same cache key"
+    or return 1
 
     # Test different files generate different keys
     set -l key3 (_nvm_cache_key "different_file.txt")
     assert_not_equals "$key1" "$key3" "Different files generate different cache keys"
+    or return 1
 
     return 0
 end

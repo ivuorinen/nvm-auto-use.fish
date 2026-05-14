@@ -12,14 +12,16 @@ function test_project_detect_no_package_json
 
     nvm_project_detect
     set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ Returns false when no package.json found"
-    or echo "❌ Should return false when no package.json"
 
     cd "$TEST_DIR"
     rm -rf "$dir"
 
-    return 0
+    if test $status_code -ne 0
+        echo "✅ Returns false when no package.json found"
+    else
+        echo "❌ Should return false when no package.json"
+        return 1
+    end
 end
 
 function test_project_detect_with_package_json
@@ -31,14 +33,16 @@ function test_project_detect_with_package_json
 
     nvm_project_detect
     set -l status_code $status
-    test $status_code -eq 0
-    and echo "✅ Returns true when package.json found"
-    or echo "❌ Should return true when package.json found"
 
     cd "$TEST_DIR"
     rm -rf "$dir"
 
-    return 0
+    if test $status_code -eq 0
+        echo "✅ Returns true when package.json found"
+    else
+        echo "❌ Should return true when package.json found"
+        return 1
+    end
 end
 
 function test_project_detect_traverses_up
@@ -52,14 +56,16 @@ function test_project_detect_traverses_up
 
     nvm_project_detect
     set -l status_code $status
-    test $status_code -eq 0
-    and echo "✅ Finds package.json in parent directory"
-    or echo "❌ Should traverse up to find package.json"
 
     cd "$TEST_DIR"
     rm -rf "$parent_dir"
 
-    return 0
+    if test $status_code -eq 0
+        echo "✅ Finds package.json in parent directory"
+    else
+        echo "❌ Should traverse up to find package.json"
+        return 1
+    end
 end
 
 function main

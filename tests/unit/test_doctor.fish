@@ -5,79 +5,106 @@ source tests/test_runner.fish
 
 function test_doctor_dispatch
     echo "Testing nvm_doctor dispatch..."
+    set -l failed 0
 
     # No arguments prints usage and returns 1
     nvm_doctor
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ No-arg call returns error"
-    or echo "❌ No-arg call should return error"
+    if test $status -ne 0
+        echo "✅ No-arg call returns error"
+    else
+        echo "❌ No-arg call should return error"
+        set failed 1
+    end
 
     # Invalid subcommand returns 1
     nvm_doctor invalid_subcommand_xyz
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ Invalid subcommand returns error"
-    or echo "❌ Invalid subcommand should return error"
+    if test $status -ne 0
+        echo "✅ Invalid subcommand returns error"
+    else
+        echo "❌ Invalid subcommand should return error"
+        set failed 1
+    end
 
-    return 0
+    return $failed
 end
 
 function test_doctor_system_info
     echo "Testing nvm_doctor system info..."
+    set -l failed 0
 
     set -l output (_nvm_doctor_system_info 2>&1)
-    test -n "$output"
-    and echo "✅ System info produces output"
-    or echo "❌ System info produced no output"
+    if test -n "$output"
+        echo "✅ System info produces output"
+    else
+        echo "❌ System info produced no output"
+        set failed 1
+    end
 
-    string match -q '*OS:*' "$output"
-    and echo "✅ System info contains OS line"
-    or echo "❌ System info missing OS line"
+    if string match -q '*OS:*' "$output"
+        echo "✅ System info contains OS line"
+    else
+        echo "❌ System info missing OS line"
+        set failed 1
+    end
 
-    return 0
+    return $failed
 end
 
 function test_doctor_fix_dispatch
     echo "Testing nvm_doctor fix dispatch..."
+    set -l failed 0
 
     # Fix with no subcommand prints available types and returns 1
     nvm_doctor fix
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ fix with no type returns error"
-    or echo "❌ fix with no type should return error"
+    if test $status -ne 0
+        echo "✅ fix with no type returns error"
+    else
+        echo "❌ fix with no type should return error"
+        set failed 1
+    end
 
     # Fix with invalid type returns 1
     nvm_doctor fix invalid_type_xyz
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ fix with invalid type returns error"
-    or echo "❌ fix with invalid type should return error"
+    if test $status -ne 0
+        echo "✅ fix with invalid type returns error"
+    else
+        echo "❌ fix with invalid type should return error"
+        set failed 1
+    end
 
-    return 0
+    return $failed
 end
 
 function test_doctor_subcommands_run
     echo "Testing nvm_doctor subcommands execute without crash..."
+    set -l failed 0
 
     # These may report issues but must not crash (exit 0 or 1 only, not signal)
     nvm_doctor system >/dev/null 2>&1
-    test $status -le 1
-    and echo "✅ nvm_doctor system runs"
-    or echo "❌ nvm_doctor system crashed"
+    if test $status -le 1
+        echo "✅ nvm_doctor system runs"
+    else
+        echo "❌ nvm_doctor system crashed"
+        set failed 1
+    end
 
     nvm_doctor config >/dev/null 2>&1
-    test $status -le 1
-    and echo "✅ nvm_doctor config runs"
-    or echo "❌ nvm_doctor config crashed"
+    if test $status -le 1
+        echo "✅ nvm_doctor config runs"
+    else
+        echo "❌ nvm_doctor config crashed"
+        set failed 1
+    end
 
     nvm_doctor cache >/dev/null 2>&1
-    test $status -le 1
-    and echo "✅ nvm_doctor cache runs"
-    or echo "❌ nvm_doctor cache crashed"
+    if test $status -le 1
+        echo "✅ nvm_doctor cache runs"
+    else
+        echo "❌ nvm_doctor cache crashed"
+        set failed 1
+    end
 
-    return 0
+    return $failed
 end
 
 function main

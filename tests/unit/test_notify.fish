@@ -7,12 +7,12 @@ function test_notify_empty_message
     echo "Testing nvm_notify with empty message..."
 
     nvm_notify ""
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ Empty message returns error"
-    or echo "❌ Empty message should return error"
-
-    return 0
+    if test $status -ne 0
+        echo "✅ Empty message returns error"
+    else
+        echo "❌ Empty message should return error"
+        return 1
+    end
 end
 
 function test_notify_suppressed_when_disabled
@@ -21,13 +21,14 @@ function test_notify_suppressed_when_disabled
     set -g _nvm_auto_use_no_notifications 1
     nvm_notify "test message"
     set -l status_code $status
-    test $status_code -eq 0
-    and echo "✅ Notification suppressed when disabled"
-    or echo "❌ Notification should be suppressed when disabled"
-
     set -e _nvm_auto_use_no_notifications
 
-    return 0
+    if test $status_code -eq 0
+        echo "✅ Notification suppressed when disabled"
+    else
+        echo "❌ Notification should be suppressed when disabled"
+        return 1
+    end
 end
 
 function test_notify_with_message_does_not_crash
@@ -36,13 +37,15 @@ function test_notify_with_message_does_not_crash
     # Suppress notifications so no system dialog appears during tests
     set -g _nvm_auto_use_no_notifications 1
     nvm_notify "Node.js v18.0.0" >/dev/null 2>&1
-    test $status -le 1
-    and echo "✅ nvm_notify runs without crashing"
-    or echo "❌ nvm_notify crashed unexpectedly"
-
+    set -l status_code $status
     set -e _nvm_auto_use_no_notifications
 
-    return 0
+    if test $status_code -eq 0
+        echo "✅ nvm_notify runs without crashing"
+    else
+        echo "❌ nvm_notify returned failure unexpectedly"
+        return 1
+    end
 end
 
 function main

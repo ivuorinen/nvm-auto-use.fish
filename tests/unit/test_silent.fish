@@ -8,53 +8,67 @@ function test_silent_dispatch
 
     # Invalid subcommand returns 1
     nvm_auto_use_silent invalid_arg
-    set -l status_code $status
-    test $status_code -ne 0
-    and echo "✅ Invalid argument returns error"
-    or echo "❌ Invalid argument should return error"
-
-    return 0
+    if test $status -ne 0
+        echo "✅ Invalid argument returns error"
+    else
+        echo "❌ Invalid argument should return error"
+        return 1
+    end
 end
 
 function test_silent_enable_disable
     echo "Testing silent mode toggle..."
+    set -l failed 0
 
     # Enable silent mode
     nvm_auto_use_silent on
-    set -q _nvm_auto_use_silent
-    and echo "✅ Silent mode enabled"
-    or echo "❌ Silent mode flag not set after 'on'"
+    if set -q _nvm_auto_use_silent
+        echo "✅ Silent mode enabled"
+    else
+        echo "❌ Silent mode flag not set after 'on'"
+        set failed 1
+    end
 
     # Disable silent mode
     nvm_auto_use_silent off
-    set -q _nvm_auto_use_silent
-    and echo "❌ Silent mode flag still set after 'off'"
-    or echo "✅ Silent mode disabled"
+    if not set -q _nvm_auto_use_silent
+        echo "✅ Silent mode disabled"
+    else
+        echo "❌ Silent mode flag still set after 'off'"
+        set failed 1
+    end
 
-    return 0
+    return $failed
 end
 
 function test_silent_status_report
     echo "Testing silent mode status report..."
+    set -l failed 0
 
     # Status with silent off
     set -e _nvm_auto_use_silent
     set -l output (nvm_auto_use_silent 2>&1)
-    string match -q '*disabled*' "$output"
-    and echo "✅ Status reports disabled when silent is off"
-    or echo "❌ Status should report disabled when silent is off"
+    if string match -q '*disabled*' "$output"
+        echo "✅ Status reports disabled when silent is off"
+    else
+        echo "❌ Status should report disabled when silent is off"
+        set failed 1
+    end
 
     # Status with silent on
     set -g _nvm_auto_use_silent 1
     set -l output (nvm_auto_use_silent 2>&1)
-    string match -q '*enabled*' "$output"
-    and echo "✅ Status reports enabled when silent is on"
-    or echo "❌ Status should report enabled when silent is on"
+    if string match -q '*enabled*' "$output"
+        echo "✅ Status reports enabled when silent is on"
+    else
+        echo "❌ Status should report enabled when silent is on"
+        set failed 1
+    end
 
     # Cleanup
     set -e _nvm_auto_use_silent
 
-    return 0
+    return $failed
 end
 
 function main

@@ -52,7 +52,7 @@ function test_async_cleanup
 
     # Start a dummy background job
     sleep 2 &
-    set -l job_id (jobs -l | tail -n 1 | grep -o '[0-9]*')
+    set -l job_id $last_pid
     if test -n "$job_id"
         echo "✅ Dummy job started: $job_id"
     else
@@ -72,7 +72,7 @@ function test_async_wait
 
     # Start a quick background job
     sleep 1 &
-    set -l job_id (jobs -l | tail -n 1 | grep -o '[0-9]*')
+    set -l job_id $last_pid
     if test -n "$job_id"
         _nvm_async_wait "$job_id" 3
         and echo "✅ _nvm_async_wait completed for job $job_id"

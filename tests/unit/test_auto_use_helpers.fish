@@ -5,30 +5,35 @@ source tests/test_runner.fish
 
 function test_select_manager
     echo "Testing _nvm_auto_use_select_manager..."
+    set -l failed 0
 
     # Mock nvm_compat_detect to return a list
     function nvm_compat_detect
         echo "nvm fnm volta"
     end
 
-    set -e _nvm_auto_use_preferred_manager
+    set -eg _nvm_auto_use_preferred_manager
     set -l manager (_nvm_auto_use_select_manager)
     assert_equals "$manager" nvm "Default manager selection returns first available"
+    or set failed 1
 
     set -g _nvm_auto_use_preferred_manager volta
     set manager (_nvm_auto_use_select_manager)
     assert_equals "$manager" volta "Preferred manager selection works"
+    or set failed 1
 
-    set -e _nvm_auto_use_preferred_manager
+    set -eg _nvm_auto_use_preferred_manager
     # Note: leaving the nvm_compat_detect mock in place. `functions -e` here
     # would prevent fish from autoloading the real implementation later
     # (subsequent tests' cd hooks would otherwise hit "Unknown command").
+
+    return $failed
 end
 
 function test_should_debounce
     echo "Testing _nvm_auto_use_should_debounce..."
 
-    set -e _nvm_auto_use_last_change
+    set -eg _nvm_auto_use_last_change
     set -g _nvm_auto_use_debounce_ms 1000
 
     # These helpers communicate via $status, not stdout. Capturing the
@@ -53,8 +58,8 @@ function test_should_debounce
         return 1
     end
 
-    set -e _nvm_auto_use_last_change
-    set -e _nvm_auto_use_debounce_ms
+    set -eg _nvm_auto_use_last_change
+    set -eg _nvm_auto_use_debounce_ms
 end
 
 function test_is_excluded_dir
@@ -71,24 +76,26 @@ function test_is_excluded_dir
     else
         echo "❌ Excluded directory not detected"
         cd "$orig_pwd"
-        set -e _nvm_auto_use_excluded_dirs
+        set -eg _nvm_auto_use_excluded_dirs
         return 1
     end
 
     cd "$orig_pwd"
-    set -e _nvm_auto_use_excluded_dirs
+    set -eg _nvm_auto_use_excluded_dirs
 end
 
 function test_get_mtime
     echo "Testing _nvm_auto_use_get_mtime..."
 
     echo test >testfile
-    set mtime (_nvm_auto_use_get_mtime "testfile")
-    test -n "$mtime"
-    and echo "✅ mtime returned: $mtime"
-    or echo "❌ mtime not returned"
-
+    set -l mtime (_nvm_auto_use_get_mtime "testfile")
     rm -f testfile
+    if test -n "$mtime"
+        echo "✅ mtime returned: $mtime"
+    else
+        echo "❌ mtime not returned"
+        return 1
+    end
 end
 
 function test_is_cache_valid
@@ -102,8 +109,8 @@ function test_is_cache_valid
         echo "✅ Cache valid for matching file/mtime"
     else
         echo "❌ Cache should be valid for matching file/mtime"
-        set -e _nvm_auto_use_cached_file
-        set -e _nvm_auto_use_cached_mtime
+        set -eg _nvm_auto_use_cached_file
+        set -eg _nvm_auto_use_cached_mtime
         return 1
     end
 
@@ -112,8 +119,8 @@ function test_is_cache_valid
         echo "✅ Cache invalid for different file"
     else
         echo "❌ Cache should be invalid for different file"
-        set -e _nvm_auto_use_cached_file
-        set -e _nvm_auto_use_cached_mtime
+        set -eg _nvm_auto_use_cached_file
+        set -eg _nvm_auto_use_cached_mtime
         return 1
     end
 
@@ -123,17 +130,18 @@ function test_is_cache_valid
         echo "✅ Cache invalid for empty file"
     else
         echo "❌ Cache must not be valid when no file is detected"
-        set -e _nvm_auto_use_cached_file
-        set -e _nvm_auto_use_cached_mtime
+        set -eg _nvm_auto_use_cached_file
+        set -eg _nvm_auto_use_cached_mtime
         return 1
     end
 
-    set -e _nvm_auto_use_cached_file
-    set -e _nvm_auto_use_cached_mtime
+    set -eg _nvm_auto_use_cached_file
+    set -eg _nvm_auto_use_cached_mtime
 end
 
 function test_clear_cache
     echo "Testing _nvm_auto_use_clear_cache..."
+    set -l failed 0
 
     set -g _nvm_auto_use_cached_file foo
     set -g _nvm_auto_use_cached_version bar
@@ -143,17 +151,21 @@ function test_clear_cache
         echo "✅ Cached file cleared"
     else
         echo "❌ Cached file not cleared"
+        set failed 1
     end
     if not set -q _nvm_auto_use_cached_version
         echo "✅ Cached version cleared"
     else
         echo "❌ Cached version not cleared"
+        set failed 1
     end
     if not set -q _nvm_auto_use_cached_mtime
         echo "✅ Cached mtime cleared"
     else
         echo "❌ Cached mtime not cleared"
+        set failed 1
     end
+    return $failed
 end
 
 function main

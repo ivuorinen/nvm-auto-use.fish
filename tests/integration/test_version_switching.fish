@@ -6,6 +6,7 @@ source tests/test_runner.fish
 
 function test_nvmrc_detection
     echo "Testing .nvmrc file detection..."
+    set -l failed 0
 
     # Create test project with .nvmrc in temp dir
     mkdir -p "$TEST_DIR/test_project"
@@ -14,43 +15,50 @@ function test_nvmrc_detection
     cd "$TEST_DIR/test_project"
     set -l found_file (nvm_find_nvmrc)
     assert_contains "$found_file" ".nvmrc" "Found .nvmrc file in current directory"
+    or set failed 1
 
     # Test parent directory search
     mkdir -p subdir
     cd subdir
     set found_file (nvm_find_nvmrc)
     assert_contains "$found_file" ".nvmrc" "Found .nvmrc file in parent directory"
+    or set failed 1
 
     cd "$TEST_DIR"
     rm -rf "$TEST_DIR/test_project"
 
-    return 0
+    return $failed
 end
 
 function test_version_extraction
     echo "Testing version extraction from different file formats..."
+    set -l failed 0
 
     cd "$TEST_DIR"
     # Test .nvmrc
     echo "18.17.0" >test.nvmrc
     set -l node_version (nvm_extract_version "test.nvmrc")
     assert_equals "$node_version" "18.17.0" "Extracted version from .nvmrc"
+    or set failed 1
 
     # Test .node-version
     echo "16.20.0" >test.node-version
     set node_version (nvm_extract_version "test.node-version")
     assert_equals "$node_version" "16.20.0" "Extracted version from .node-version"
+    or set failed 1
 
     # Test .tool-versions
     echo "nodejs 20.5.0" >test.tool-versions
     set node_version (nvm_extract_version "test.tool-versions:nodejs")
     assert_equals "$node_version" "20.5.0" "Extracted version from .tool-versions"
+    or set failed 1
 
     # Test package.json (requires jq)
     if command -q jq
         echo '{"engines": {"node": ">=18.0.0"}}' >test.package.json
         set node_version (nvm_extract_version "test.package.json:engines.node")
         assert_equals "$node_version" "18.0.0" "Extracted version from package.json"
+        or set failed 1
     else
         echo "ℹ️  Skipping package.json test (jq not available)"
     end
@@ -58,7 +66,7 @@ function test_version_extraction
     # Cleanup
     rm -f test.nvmrc test.node-version test.tool-versions test.package.json
 
-    return 0
+    return $failed
 end
 
 function test_manager_detection
@@ -112,6 +120,7 @@ end
 
 function test_async_operations
     echo "Testing async operations..."
+    set -l failed 0
 
     cd "$TEST_DIR"
     # Create test version file
@@ -125,15 +134,19 @@ function test_async_operations
 
         # Wait for completion
         nvm_async wait "$job_id" 5
-        and echo "✅ Async operation completed"
-        or echo "⚠️  Async operation timed out"
+        if test $status -eq 0
+            echo "✅ Async operation completed"
+        else
+            echo "⚠️  Async operation timed out"
+            set failed 1
+        end
     else
         echo "ℹ️  Async operation may have completed immediately"
     end
 
     rm -f async_test.nvmrc
 
-    return 0
+    return $failed
 end
 
 function test_cache_integration
@@ -152,11 +165,10 @@ function test_cache_integration
     # Second access should hit cache (if caching is implemented)
     set -l version2 (nvm_extract_version "cache_test.nvmrc")
 
-    assert_equals "$version1" "$version2" "Consistent results from cache"
-
     rm -f cache_test.nvmrc
 
-    return 0
+    assert_equals "$version1" "$version2" "Consistent results from cache"
+    or return 1
 end
 
 function main

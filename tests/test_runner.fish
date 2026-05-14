@@ -107,6 +107,22 @@ function assert_contains -d "Assert string contains substring"
     end
 end
 
+function assert_not_contains -d "Assert string does not contain substring"
+    set -l string "$argv[1]"
+    set -l substring "$argv[2]"
+    set -l message "$argv[3]"
+
+    if not string match -q "*$substring*" "$string"
+        echo "✅ $message"
+        return 0
+    else
+        echo "❌ $message"
+        echo "   String: '$string'"
+        echo "   Should not contain: '$substring'"
+        return 1
+    end
+end
+
 function assert_file_exists -d "Assert file exists"
     set -l file_path "$argv[1]"
     set -l message "$argv[2]"
@@ -179,10 +195,6 @@ function cleanup_test_env -d "Clean up test environment"
         end
         if test "$TEST_DIR" = "$HOME"
             echo "⚠️  TEST_DIR is $HOME, refusing to delete"
-            return 1
-        end
-        if string match -q "$HOME*" "$TEST_DIR"; and test "$TEST_DIR" = "$HOME"
-            echo "⚠️  TEST_DIR is $HOME or a parent, refusing to delete"
             return 1
         end
         if test (string length "$TEST_DIR") -lt 8
