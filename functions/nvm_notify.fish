@@ -16,14 +16,15 @@ function nvm_notify -a message -d "Send notification for Node.js version changes
         set -l escaped (string replace -a '\\' '\\\\' -- "$message" \
             | string replace -a '"' '\\"')
         osascript -e "display notification \"$escaped\" with title \"nvm-auto-use\""
-        return
+        and return 0
     end
     if command -q notify-send
         notify-send nvm-auto-use "$message"
-        return
+        and return 0
     end
     if command -q terminal-notifier
         terminal-notifier -title nvm-auto-use -message "$message"
-        return
+        and return 0
     end
+    return 1
 end

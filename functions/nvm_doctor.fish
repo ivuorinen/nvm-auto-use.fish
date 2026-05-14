@@ -137,15 +137,13 @@ function _nvm_doctor_check_managers -d "Check version manager availability and s
             echo "   📋 $manager status:"
             switch $manager
                 case nvm
-                    if test -f "$HOME/.nvm/nvm.sh"
-                        echo "      ✅ NVM script found"
-                        if command -q nvm
-                            echo "      ✅ NVM command available"
-                        else
-                            echo "      ⚠️  NVM not in PATH (normal for Fish)"
-                        end
+                    if command -q nvm
+                        echo "      ✅ NVM command available"
+                    else if test -f "$HOME/.nvm/nvm.sh"
+                        echo "      ⚠️  nvm.sh found but Fish nvm function is not loaded"
+                        set issues (math "$issues + 1")
                     else
-                        echo "      ❌ NVM installation not found"
+                        echo "      ❌ NVM not available in this Fish session"
                         set issues (math "$issues + 1")
                     end
                 case fnm
@@ -165,7 +163,7 @@ function _nvm_doctor_check_managers -d "Check version manager availability and s
                 case asdf
                     if command -q asdf
                         echo "      ✅ asdf available: "(asdf --version)
-                        if asdf plugin list | grep -q nodejs
+                        if asdf plugin list 2>/dev/null | string match -qr nodejs
                             echo "      ✅ nodejs plugin installed"
                         else
                             echo "      ❌ nodejs plugin not installed"
@@ -411,9 +409,12 @@ function _nvm_doctor_auto_fix -d "Attempt to fix common issues"
                 set cache_dir "$HOME/.cache/nvm-auto-use"
             end
 
-            mkdir -p "$cache_dir" 2>/dev/null
-            chmod 755 "$cache_dir" 2>/dev/null
-            echo "✅ Cache directory permissions fixed"
+            if mkdir -p "$cache_dir" 2>/dev/null; and chmod 755 "$cache_dir" 2>/dev/null
+                echo "✅ Cache directory permissions fixed"
+            else
+                echo "❌ Failed to fix cache directory permissions: $cache_dir" >&2
+                return 1
+            end
 
         case config
             echo "Resetting configuration to defaults..."

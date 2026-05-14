@@ -6,7 +6,11 @@ function nvm_version_status -d "Show detailed Node.js version status"
             set npm_version (npm -v 2>/dev/null)
         end
 
-        echo "Node.js: v$node_version"
+        if test -n "$node_version"
+            echo "Node.js: v$node_version"
+        else
+            echo "Node.js: unavailable"
+        end
         if test -n "$npm_version"
             echo "npm: v$npm_version"
         end

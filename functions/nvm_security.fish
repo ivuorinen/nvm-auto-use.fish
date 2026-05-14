@@ -33,8 +33,14 @@ function _nvm_security_validate_version -d "Validate version string format and s
     # Remove leading 'v' if present
     set node_version (string replace -r '^v' '' "$node_version")
 
-    # Check for valid semver format (anchored end to reject trailing junk)
-    if not string match -qr '^\d+\.\d+\.\d+$' "$node_version"
+    # Check semver format; allow prerelease suffix when policy is enabled
+    set -l semver_pattern '^\d+\.\d+\.\d+$'
+    set -l allow_prerelease (nvm_security policy get allow_prerelease)
+    if test "$allow_prerelease" = 1 -o "$allow_prerelease" = true \
+            -o "$allow_prerelease" = on
+        set semver_pattern '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$'
+    end
+    if not string match -qr $semver_pattern "$node_version"
         echo "⚠️  Invalid version format: $node_version" >&2
         return 1
     end
@@ -84,6 +90,9 @@ function _nvm_security_check_vulnerabilities -d "Check version for known vulnera
             return 1
         else if test "$cached_result" = safe
             echo "✅ Version $node_version appears safe (cached)" >&2
+            return 0
+        else if test "$cached_result" = unknown
+            echo "ℹ️  Security status for $node_version is unknown (cached)" >&2
             return 0
         end
     end
