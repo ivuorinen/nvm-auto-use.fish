@@ -62,11 +62,11 @@ After installation, the plugin works automatically! Simply navigate to any direc
 ```fish
 # Create a project with specific Node version
 echo "18.17.0" > .nvmrc
-cd .  # Automatically switches to Node.js v18.17.0
+cd .. && cd -  # Triggers a directory change → switches to Node.js v18.17.0
 
 # Works with package.json too
 echo '{"engines": {"node": ">=16.0.0"}}' > package.json
-cd .  # Switches to compatible Node.js version
+cd .. && cd -  # Triggers a directory change → switches to compatible Node.js version
 ```
 
 ## Configuration
@@ -102,12 +102,12 @@ nvm_auto_use_config reset
 
 ## Supported File Formats
 
-| File             | Format             | Example                           |
-|------------------|--------------------|-----------------------------------|
-| `.nvmrc`         | Plain version      | `18.17.0` or `lts/hydrogen`       |
-| `.node-version`  | Plain version      | `18.17.0`                         |
-| `.tool-versions` | Tool + version     | `nodejs 18.17.0`                  |
-| `package.json`   | engines.node field | `"engines": {"node": ">=16.0.0"}` |
+| File             | Format                 | Example                                             |
+|------------------|------------------------|-----------------------------------------------------|
+| `.nvmrc`         | Plain version or alias | `18.17.0`, `lts/hydrogen`, `lts/*`, `lts`, `latest` |
+| `.node-version`  | Plain version          | `18.17.0`                                           |
+| `.tool-versions` | Tool + version         | `nodejs 18.17.0`                                    |
+| `package.json`   | engines.node field     | `"engines": {"node": ">=16.0.0"}`                   |
 
 ## Advanced Features
 

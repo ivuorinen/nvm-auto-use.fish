@@ -84,6 +84,5 @@ by application-layer architectural patterns.
   `nvm_auto_use.fish`, while `nvm_cache` is the XDG on-disk cache. The two
   caching layers serve different purposes but share no abstraction boundary —
   a caller cannot tell which layer is active without reading both files.
-- `_nvm_auto_use_project_only` is checked in `nvm_auto_use.fish` but there
-  is no `nvm_auto_use_config project_only` subcommand, leaving this feature
-  undiscoverable through the documented configuration interface (see DD-002).
+- `_nvm_auto_use_project_only` is set via `nvm_auto_use_config project_only on|off`.
+  See `nvm_auto_use_config.fish` for the full dispatch. (DD-002 fixed.)

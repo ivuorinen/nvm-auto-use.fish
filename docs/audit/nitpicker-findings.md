@@ -1,9 +1,9 @@
 # Nitpicker Findings
 Generated: 2026-05-08
-Last validated: 2026-05-08
+Last validated: 2026-05-14
 
 ## Summary
-- Total: 27 | Open: 1 | Fixed: 26 | Invalid: 0
+- Total: 45 | Open: 1 | Fixed: 44 | Invalid: 0
 
 ## Open Findings
 
@@ -13,11 +13,92 @@ Last validated: 2026-05-08
 Category: reliability
 Area: functions/nvm_find_nvmrc.fish
 Problem: The directory walk uses `dirname` to move up the tree. A circular symlink could theoretically cause an infinite loop.
-Evidence: Walk terminates on `/`; circular symlinks at `/` level cannot exist in POSIX filesystems.
+Evidence: Walk terminates on `/`; `dirname` operates on path strings not filesystem traversal, so circular symlinks cannot cause infinite loops.
 Impact: Extremely unlikely; no practical risk.
 Fix: No action required.
 
 ## Fixed
+
+### Pass 4 — 2026-05-14
+
+#### [NP-036] `test_async_wait` NP-035 fix incomplete — `grep -o` pattern still present
+Fixed: 2026-05-14
+Notes: Replaced `set -l job_id (jobs -l | tail -n 1 | grep -o '[0-9]*')` with `sleep 1 &; set -l job_id $last_pid` in `test_async_helpers.fish:74-75`, matching the pattern already applied to `test_async_cleanup` in NP-035.
+
+#### [NP-037] `_nvm_auto_use_clear_cache` uses `set -e` without `-g` flag
+Fixed: 2026-05-14
+Notes: Changed all three `set -e _nvm_auto_use_cached_*` calls in `nvm_auto_use.fish:173-175` to `set -eg`, consistent with the convention established by NP-025 and NP-028.
+
+#### [NP-038] `_nvm_auto_use_config_include` indexed array erase missing `-g`
+Fixed: 2026-05-14
+Notes: Changed `set -e _nvm_auto_use_excluded_dirs[$index]` to `set -eg` in `nvm_auto_use_config.fish:112`. Now consistent with every other `set -e` in that file.
+
+#### [NP-039] Three `grep -q` external calls remain in function modules
+Fixed: 2026-05-14
+Notes: Replaced all three with Fish-native equivalents: `nvm_find_nvmrc.fish:26` → `string match -qr '^nodejs '`; `nvm_compat_detect.fish:19` → `string match -qx nodejs`; `nvm_doctor.fish:166` → `string match -qr 'nodejs'`.
+
+#### [NP-040] `_nvm_async_safe_read` is dead code
+Fixed: 2026-05-14
+Notes: Removed the unreachable `_nvm_async_safe_read` function (lines 112-122) from `nvm_async.fish`. No caller existed in the codebase.
+
+#### [NP-041] Private functions in `nvm_auto_use.fish` and `nvm_auto_use_config.fish` missing `-d` descriptions
+Fixed: 2026-05-14
+Notes: Added `-d "..."` to all 19 function definitions: 8 in `nvm_auto_use.fish` (including the public `nvm_auto_use`) and 11 private helpers in `nvm_auto_use_config.fish`. All pass `fish_indent --check` and `make lint-fish`.
+
+### Pass 3 — 2026-05-14
+
+#### [NP-033] `lint-editorconfig` PATH missing `$HOME/bin` and `$XDG_BIN_HOME`
+Fixed: 2026-05-14
+Notes: Split the long `PATH=` assignment into `_ec_path="$$PWD/bin:$$HOME/bin:$${XDG_BIN_HOME:-$$HOME/bin}"` + `PATH="$$_ec_path:$$PATH" editorconfig-checker` in Makefile:150. Now covers the installer's preferred `$HOME/bin`/`$XDG_BIN_HOME` locations, not just the `./bin` last-resort fallback.
+
+#### [NP-034] `test_cache.fish` assert failures silently pass
+Fixed: 2026-05-14
+Notes: Added `or return 1` after `assert_equals` in `test_cache_basic_operations` (line 12), `assert_contains` in `test_cache_stats` (line 62), and both `assert_equals`/`assert_not_equals` calls in `test_cache_key_generation` (lines 73, 77). Failures now propagate to the `main` counter.
+
+#### [NP-035] `test_async_helpers.fish:55` brittle job-ID extraction via `grep`
+Fixed: 2026-05-14
+Notes: Replaced `jobs -l | tail -n 1 | grep -o '[0-9]*'` with `$last_pid` — the Fish variable set to the PID of the most recently backgrounded job. Eliminates format-dependent number parsing.
+
+
+## Fixed
+
+### Pass 2 — 2026-05-14
+
+#### [NP-024] LTS alias silently resolves to current version in async subshell
+Fixed: 2026-05-14
+Notes: Changed `command -q nvm` to `type -q nvm` in `nvm_extract_version.fish:43`. `type -q` checks both executables and Fish functions, so Fish users with a nvm Fish plugin (the common case) now get correct LTS alias resolution in async subshells. The bash-function nvm path is unchanged — it would require sourcing `$NVM_DIR/nvm.sh` via bash, which is a larger change out of scope here.
+
+#### [NP-025] `set -e` without `-g` on global variables in test helpers
+Fixed: 2026-05-14
+Notes: Updated all `set -e _nvm_auto_use_*` calls in `tests/unit/test_auto_use_helpers.fish` to `set -eg`. Affected: `_nvm_auto_use_preferred_manager` (×2), `_nvm_auto_use_last_change` (×2), `_nvm_auto_use_debounce_ms`, `_nvm_auto_use_excluded_dirs` (×2), `_nvm_auto_use_cached_file` (×4), `_nvm_auto_use_cached_mtime` (×4).
+
+#### [NP-026] `assert_not_equals` gives trivially-true result after `include`
+Fixed: 2026-05-14
+Notes: Added `assert_not_contains` helper to `tests/test_runner.fish` (the equivalent `assert_contains` existed but not its negation). Changed line 61 of `test_auto_use_config_helpers.fish` from `assert_not_equals "$_nvm_auto_use_excluded_dirs" testdir` to `assert_not_contains "$_nvm_auto_use_excluded_dirs" testdir`. Also fixed `set -e _nvm_auto_use_excluded_dirs` → `set -eg` on line 56 of that file.
+
+#### [NP-027] `install_editorconfig-checker.sh` falls back before attempting `mkdir`
+Fixed: 2026-05-14
+Notes: Replaced `[ -d "$INSTALL_DIR" ] || INSTALL_DIR="/usr/local/bin"` with `mkdir -p "$INSTALL_DIR" 2>/dev/null || true` followed by a writability check (`[ ! -w "$INSTALL_DIR" ]`). Fresh environments now get `$HOME/bin` created rather than falling back to `/usr/local/bin` unnecessarily.
+
+#### [NP-028] Six `set -e` calls on global config variables missing `-g` scope flag
+Fixed: 2026-05-14
+Notes: Changed all `set -e _nvm_auto_use_*` in `functions/nvm_auto_use_config.fish` to `set -eg`: `_nvm_auto_use_no_install`, `_nvm_auto_use_silent`, `_nvm_auto_use_project_only`, `_nvm_auto_use_preferred_manager`, and all six vars in `_nvm_auto_use_config_reset`. Configuration `reset` and individual `off/disable` commands now reliably clear their globals.
+
+#### [NP-029] Injection test artifact `/tmp/nvm-auto-use-malicious-test` never cleaned up
+Fixed: 2026-05-14
+Notes: Added `rm -f /tmp/nvm-auto-use-malicious-test` in both `test_version_validation` and `test_source_validation` in `tests/unit/test_security.fish`, immediately after the assertion that tests the malicious input is rejected.
+
+#### [NP-030] README table missing `lts/*` wildcard alias
+Fixed: 2026-05-14
+Notes: Updated the `.nvmrc` row in the Supported File Formats table to list all supported aliases: `18.17.0`, `lts/hydrogen`, `lts/*`, `lts`, `latest`. Format column updated to "Plain version or alias". `markdown-table-formatter` re-aligned the columns.
+
+#### [NP-031] Timeout boundary recomputed on every loop iteration in `_nvm_async_wait`
+Fixed: 2026-05-14
+Notes: Added `set -l max_iter (math "$timeout * 10")` before the loop in `_nvm_async_wait`; the `while` condition now compares against `$max_iter` instead of re-evaluating `math` each iteration.
+
+#### [NP-032] No `all` phony target — `make` with no arguments only prints help
+Fixed: 2026-05-14
+Notes: Added `all: lint test-unit` target and `all` to the `.PHONY` list in `Makefile`. `make` with no arguments now runs the full check suite rather than printing the help menu.
 
 ### Pass 1 — 2026-05-08
 

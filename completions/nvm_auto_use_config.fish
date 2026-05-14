@@ -28,6 +28,6 @@ complete -c nvm_auto_use_config -n "__fish_seen_subcommand_from manager" -a asdf
 
 # Common directory patterns for exclusion
 complete -c nvm_auto_use_config -n "__fish_seen_subcommand_from exclude" -a node_modules -d "Exclude node_modules directories"
-complete -c nvm_auto_use_config -n "__fish_seen_subcommand_from exclude" -a ".git" -d "Exclude .git directories"
+complete -c nvm_auto_use_config -n "__fish_seen_subcommand_from exclude" -a '.git' -d "Exclude .git directories"
 complete -c nvm_auto_use_config -n "__fish_seen_subcommand_from exclude" -a build -d "Exclude build directories"
 complete -c nvm_auto_use_config -n "__fish_seen_subcommand_from exclude" -a dist -d "Exclude dist directories"
