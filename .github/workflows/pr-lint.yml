@@ -10,11 +10,20 @@ on:
     branches: [master, main]
 
 jobs:
-  Lint:
+  LintPush:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
+      statuses: write
+    steps:
+      - uses: ivuorinen/actions/pr-lint@84380fe01733b915ffea5892083ee636ed2b765a # v2026.05.04
+
+  LintPR:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
       statuses: write
       issues: write
       pull-requests: write
