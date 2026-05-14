@@ -1,4 +1,4 @@
-function nvm_auto_use --on-variable PWD
+function nvm_auto_use -d "Auto-switch Node.js version on directory change" --on-variable PWD
     # Select the Node.js version manager
     set -l manager (_nvm_auto_use_select_manager)
     if test -z "$manager"
@@ -46,7 +46,7 @@ function nvm_auto_use --on-variable PWD
     end
 end
 
-function _nvm_auto_use_select_manager
+function _nvm_auto_use_select_manager -d "Return the manager to use (preferred or first available)"
     set -l available_managers (nvm_compat_detect 2>/dev/null | string split ' ')
     if test -z "$available_managers"
         return
@@ -60,7 +60,7 @@ function _nvm_auto_use_select_manager
     echo $available_managers[1]
 end
 
-function _nvm_auto_use_should_debounce
+function _nvm_auto_use_should_debounce -d "Return 0 if within debounce window, 1 otherwise"
     set -l debounce_ms (_nvm_auto_use_get_debounce)
     # GNU date supports %3N (millisecond precision); BSD/macOS date silently
     # outputs a literal "3N" suffix, so we must validate the result before
@@ -83,7 +83,7 @@ function _nvm_auto_use_should_debounce
     return 1
 end
 
-function _nvm_auto_use_is_excluded_dir
+function _nvm_auto_use_is_excluded_dir -d "Return 0 if current directory matches an exclusion pattern"
     set -l current_dir (pwd)
     set -l patterns $_nvm_auto_use_excluded_dirs node_modules .git
     for pattern in $patterns
@@ -94,7 +94,7 @@ function _nvm_auto_use_is_excluded_dir
     return 1
 end
 
-function _nvm_auto_use_get_mtime
+function _nvm_auto_use_get_mtime -d "Return mtime of the version file (strips :format suffix)"
     # nvm_find_nvmrc returns values like "path/to/package.json:engines.node"
     # for non-plain formats; strip the ":format" suffix so stat sees a real path.
     set -l file (string split -m 1 ':' -- "$argv[1]")[1]
@@ -103,7 +103,7 @@ function _nvm_auto_use_get_mtime
     end
 end
 
-function _nvm_auto_use_is_cache_valid
+function _nvm_auto_use_is_cache_valid -d "Return 0 if in-memory cache matches given file and mtime"
     set -l file $argv[1]
     set -l mtime $argv[2]
     # Treat empty file as "no cache" — empty == empty must not short-circuit
@@ -118,7 +118,7 @@ function _nvm_auto_use_is_cache_valid
     return 1
 end
 
-function _nvm_auto_use_switch_version
+function _nvm_auto_use_switch_version -d "Validate version and invoke the selected manager to switch"
     set -l manager $argv[1]
     set -l nvmrc_file $argv[2]
     set -l nvmrc_mtime $argv[3]
@@ -169,8 +169,8 @@ function _nvm_auto_use_switch_version
     end
 end
 
-function _nvm_auto_use_clear_cache
-    set -e _nvm_auto_use_cached_file
-    set -e _nvm_auto_use_cached_version
-    set -e _nvm_auto_use_cached_mtime
+function _nvm_auto_use_clear_cache -d "Erase the in-memory file/mtime/version cache globals"
+    set -eg _nvm_auto_use_cached_file
+    set -eg _nvm_auto_use_cached_version
+    set -eg _nvm_auto_use_cached_mtime
 end

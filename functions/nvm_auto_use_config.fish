@@ -38,7 +38,7 @@ function nvm_auto_use_config -d "Configure nvm-auto-use settings"
     end
 end
 
-function _nvm_auto_use_config_show
+function _nvm_auto_use_config_show -d "Print a summary of all current configuration values"
     echo "nvm-auto-use configuration:"
     echo "  auto_install: "(test -n "$_nvm_auto_use_no_install"; and echo "disabled"; or echo "enabled")
     echo "  silent: "(test -n "$_nvm_auto_use_silent"; and echo "enabled"; or echo "disabled")
@@ -48,11 +48,11 @@ function _nvm_auto_use_config_show
     echo "  preferred_manager: "(test -n "$_nvm_auto_use_preferred_manager"; and echo "$_nvm_auto_use_preferred_manager"; or echo "auto-detect")
 end
 
-function _nvm_auto_use_config_auto_install
+function _nvm_auto_use_config_auto_install -d "Enable or disable automatic Node.js version installation"
     set -l value $argv[1]
     switch $value
         case on enable true 1
-            set -e _nvm_auto_use_no_install
+            set -eg _nvm_auto_use_no_install
             echo "Auto-install enabled"
         case off disable false 0
             set -g _nvm_auto_use_no_install 1
@@ -63,14 +63,14 @@ function _nvm_auto_use_config_auto_install
     end
 end
 
-function _nvm_auto_use_config_silent
+function _nvm_auto_use_config_silent -d "Enable or disable silent mode"
     set -l value $argv[1]
     switch $value
         case on enable true 1
             set -g _nvm_auto_use_silent 1
             echo "Silent mode enabled"
         case off disable false 0
-            set -e _nvm_auto_use_silent
+            set -eg _nvm_auto_use_silent
             echo "Silent mode disabled"
         case '*'
             echo "Usage: nvm_auto_use_config silent [on|off]"
@@ -78,7 +78,7 @@ function _nvm_auto_use_config_silent
     end
 end
 
-function _nvm_auto_use_config_debounce
+function _nvm_auto_use_config_debounce -d "Set the debounce interval in milliseconds"
     set -l value $argv[1]
     if test -n "$value"; and string match -qr '^[0-9]+$' -- "$value"
         set -g _nvm_auto_use_debounce_ms $value
@@ -89,23 +89,27 @@ function _nvm_auto_use_config_debounce
     end
 end
 
-function _nvm_auto_use_config_exclude
+function _nvm_auto_use_config_exclude -d "Add a directory pattern to the exclusion list"
     set -l value $argv[1]
     if test -n "$value"
-        set -g _nvm_auto_use_excluded_dirs $_nvm_auto_use_excluded_dirs $value
-        echo "Added $value to excluded directories"
+        if not contains -- "$value" $_nvm_auto_use_excluded_dirs
+            set -g _nvm_auto_use_excluded_dirs $_nvm_auto_use_excluded_dirs $value
+            echo "Added $value to excluded directories"
+        else
+            echo "$value is already in excluded directories"
+        end
     else
         echo "Usage: nvm_auto_use_config exclude <directory_pattern>"
         return 1
     end
 end
 
-function _nvm_auto_use_config_include
+function _nvm_auto_use_config_include -d "Remove a directory pattern from the exclusion list"
     set -l value $argv[1]
     if test -n "$value"
         set -l index (contains -i "$value" $_nvm_auto_use_excluded_dirs)
         if test -n "$index"
-            set -e _nvm_auto_use_excluded_dirs[$index]
+            set -eg _nvm_auto_use_excluded_dirs[$index]
             echo "Removed $value from excluded directories"
         else
             echo "$value was not in excluded directories"
@@ -116,14 +120,14 @@ function _nvm_auto_use_config_include
     end
 end
 
-function _nvm_auto_use_config_project_only
+function _nvm_auto_use_config_project_only -d "Enable or disable project-only mode"
     set -l value $argv[1]
     switch $value
         case on enable true 1
             set -g _nvm_auto_use_project_only 1
             echo "Project-only mode enabled"
         case off disable false 0
-            set -e _nvm_auto_use_project_only
+            set -eg _nvm_auto_use_project_only
             echo "Project-only mode disabled"
         case '*'
             echo "Usage: nvm_auto_use_config project_only [on|off]"
@@ -131,7 +135,7 @@ function _nvm_auto_use_config_project_only
     end
 end
 
-function _nvm_auto_use_config_manager
+function _nvm_auto_use_config_manager -d "Set or reset the preferred version manager"
     set -l value $argv[1]
     if test -n "$value"
         if contains "$value" nvm fnm volta asdf
@@ -142,22 +146,22 @@ function _nvm_auto_use_config_manager
             return 1
         end
     else
-        set -e _nvm_auto_use_preferred_manager
+        set -eg _nvm_auto_use_preferred_manager
         echo "Reset to auto-detect manager"
     end
 end
 
-function _nvm_auto_use_config_reset
-    set -e _nvm_auto_use_no_install
-    set -e _nvm_auto_use_silent
-    set -e _nvm_auto_use_project_only
-    set -e _nvm_auto_use_debounce_ms
-    set -e _nvm_auto_use_excluded_dirs
-    set -e _nvm_auto_use_preferred_manager
+function _nvm_auto_use_config_reset -d "Reset all configuration variables to defaults"
+    set -eg _nvm_auto_use_no_install
+    set -eg _nvm_auto_use_silent
+    set -eg _nvm_auto_use_project_only
+    set -eg _nvm_auto_use_debounce_ms
+    set -eg _nvm_auto_use_excluded_dirs
+    set -eg _nvm_auto_use_preferred_manager
     echo "Configuration reset to defaults"
 end
 
-function _nvm_auto_use_get_debounce
+function _nvm_auto_use_get_debounce -d "Return the configured debounce interval (default 500ms)"
     if test -n "$_nvm_auto_use_debounce_ms"
         echo "$_nvm_auto_use_debounce_ms"
     else
@@ -165,7 +169,7 @@ function _nvm_auto_use_get_debounce
     end
 end
 
-function _nvm_auto_use_get_excluded_dirs
+function _nvm_auto_use_get_excluded_dirs -d "Return configured exclusion patterns or built-in defaults"
     if test -n "$_nvm_auto_use_excluded_dirs"
         string join ', ' $_nvm_auto_use_excluded_dirs
     else

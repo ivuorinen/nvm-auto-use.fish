@@ -269,26 +269,48 @@ function _nvm_recommend_performance -d "Performance optimization recommendations
 end
 
 function _nvm_detect_project_type -d "Detect project type from files"
-    if test -f "package.json"
-        set -l deps (string collect < package.json 2>/dev/null)
+    if not test -f package.json
+        echo general
+        return
+    end
 
-        if string match -q '*"react"*' $deps
+    if command -q jq
+        set -l all_deps (jq -r \
+            '((.dependencies // {}) + (.devDependencies // {}) + (.peerDependencies // {})) | keys[]' \
+            package.json 2>/dev/null)
+        if contains react $all_deps
             echo react
-        else if string match -q '*"vue"*' $deps
+        else if contains vue $all_deps
             echo vue
-        else if string match -q '*"@angular"*' $deps
+        else if string match -qr '^@angular/' -- $all_deps
             echo angular
-        else if string match -q '*"next"*' $deps
+        else if contains next $all_deps
             echo nextjs
-        else if string match -q '*"typescript"*' $deps
+        else if contains typescript $all_deps
             echo typescript
-        else if string match -qr '"express"|"fastify"|"koa"' $deps
+        else if contains express $all_deps; or contains fastify $all_deps; or contains koa $all_deps
             echo backend
         else
             echo node
         end
     else
-        echo general
+        # Fallback: use quoted key patterns to reduce false positives
+        set -l deps (string collect < package.json 2>/dev/null)
+        if string match -qr '"react"\s*:' $deps
+            echo react
+        else if string match -qr '"vue"\s*:' $deps
+            echo vue
+        else if string match -q '*"@angular/*' $deps
+            echo angular
+        else if string match -qr '"next"\s*:' $deps
+            echo nextjs
+        else if string match -qr '"typescript"\s*:' $deps
+            echo typescript
+        else if string match -qr '"express"\s*:|"fastify"\s*:|"koa"\s*:' $deps
+            echo backend
+        else
+            echo node
+        end
     end
 end
 

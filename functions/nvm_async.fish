@@ -95,7 +95,8 @@ function _nvm_async_wait -d "Wait for async job with timeout"
 
     # Wait for job with timeout
     set -l count 0
-    while test $count -lt (math "$timeout * 10")
+    set -l max_iter (math "$timeout * 10")
+    while test $count -lt $max_iter
         if not jobs -p | string match -qr "^$job_id\$"
             return 0
         end
@@ -106,16 +107,4 @@ function _nvm_async_wait -d "Wait for async job with timeout"
     # Timeout reached, kill job
     kill -9 $job_id 2>/dev/null
     return 1
-end
-
-function _nvm_async_safe_read -d "Safely read async operation result"
-    set -l cache_key $argv[1]
-    set -l fallback $argv[2]
-
-    set -l result (nvm_cache get "$cache_key")
-    if test -n "$result"
-        echo "$result"
-    else if test -n "$fallback"
-        echo "$fallback"
-    end
 end

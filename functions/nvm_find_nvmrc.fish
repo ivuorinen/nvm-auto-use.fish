@@ -6,12 +6,12 @@ function nvm_find_nvmrc
         return 1
     end
 
-    while test "$dir" != /
+    while true
         # Check for multiple file formats in order of preference
-        for file in .nvmrc .node-version .tool-versions package.json
-            set -l file_path "$dir/$file"
+        for spec_file in .nvmrc .node-version .tool-versions package.json
+            set -l file_path "$dir/$spec_file"
             if test -f "$file_path" -a -r "$file_path"
-                switch $file
+                switch $spec_file
                     case package.json
                         # Extract engines.node field from package.json
                         if command -q jq
@@ -23,7 +23,7 @@ function nvm_find_nvmrc
                         end
                     case .tool-versions
                         # Check if .tool-versions contains nodejs entry
-                        if grep -q '^nodejs ' "$file_path" 2>/dev/null
+                        if string match -qr '^nodejs ' (string collect < "$file_path" 2>/dev/null)
                             echo "$file_path:nodejs"
                             return 0
                         end
@@ -32,6 +32,9 @@ function nvm_find_nvmrc
                         return 0
                 end
             end
+        end
+        if test "$dir" = /
+            break
         end
         set dir (dirname "$dir")
     end
