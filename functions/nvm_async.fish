@@ -19,9 +19,8 @@ function _nvm_async_version_check -d "Async version check operation"
     set -l version_file $argv[1]
     set -l cache_key (nvm_cache key "$version_file")
 
-    # Try cache first
-    if set -l cached_result (nvm_cache get "$cache_key" 60)
-        echo "$cached_result"
+    # Cache hit: value is ready; return empty so callers skip the wait.
+    if nvm_cache get "$cache_key" 60 >/dev/null 2>&1
         return 0
     end
 
@@ -55,9 +54,8 @@ function _nvm_async_manager_check -d "Async manager availability check"
 
     set -l cache_key (nvm_cache manager_key "$manager")
 
-    # Try cache first (longer TTL for manager availability)
-    if set -l cached_result (nvm_cache get "$cache_key" 3600)
-        echo "$cached_result"
+    # Cache hit: value is ready; return empty so callers skip the wait.
+    if nvm_cache get "$cache_key" 3600 >/dev/null 2>&1
         return 0
     end
 
@@ -88,6 +86,11 @@ end
 function _nvm_async_wait -d "Wait for async job with timeout"
     set -l job_id $argv[1]
     set -l timeout $argv[2]
+
+    # Reject empty or non-numeric job IDs before using $job_id in a regex or kill.
+    if not string match -qr '^[0-9]+$' -- "$job_id"
+        return 1
+    end
 
     if test -z "$timeout"
         set timeout 2
