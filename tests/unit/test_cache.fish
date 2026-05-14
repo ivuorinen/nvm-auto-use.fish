@@ -1,7 +1,7 @@
 #!/usr/bin/env fish
 # Unit tests for nvm_cache.fish
 
-source tests/test_runner.fish
+source (path normalize (dirname (status --current-filename))/../test_runner.fish)
 
 function test_cache_basic_operations
     echo "Testing basic cache operations..."

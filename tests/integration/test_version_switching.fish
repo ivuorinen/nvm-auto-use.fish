@@ -2,7 +2,7 @@
 # Integration tests for version switching functionality
 # All tests operate under $TEST_DIR (a temporary directory) for safety
 
-source tests/test_runner.fish
+source (path normalize (dirname (status --current-filename))/../test_runner.fish)
 
 function test_nvmrc_detection
     echo "Testing .nvmrc file detection..."

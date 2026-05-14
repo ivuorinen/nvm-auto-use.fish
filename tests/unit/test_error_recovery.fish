@@ -1,7 +1,7 @@
 #!/usr/bin/env fish
 # Unit tests for nvm_error_recovery.fish
 
-source tests/test_runner.fish
+source (path normalize (dirname (status --current-filename))/../test_runner.fish)
 
 function test_error_recovery_dispatch
     echo "Testing nvm_error_recovery dispatch..."

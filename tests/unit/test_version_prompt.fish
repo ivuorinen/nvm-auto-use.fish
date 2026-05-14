@@ -1,7 +1,7 @@
 #!/usr/bin/env fish
 # Unit tests for nvm_version_prompt.fish
 
-source tests/test_runner.fish
+source (path normalize (dirname (status --current-filename))/../test_runner.fish)
 
 function test_version_prompt_runs_without_crash
     echo "Testing nvm_version_prompt runs without crash..."

@@ -3,7 +3,7 @@ Generated: 2026-05-08
 Last validated: 2026-05-14
 
 ## Summary
-- Total: 45 | Open: 1 | Fixed: 44 | Invalid: 0
+- Total: 51 | Open: 1 | Fixed: 50 | Invalid: 0
 
 ## Open Findings
 
@@ -18,6 +18,32 @@ Impact: Extremely unlikely; no practical risk.
 Fix: No action required.
 
 ## Fixed
+
+### Pass 5 — 2026-05-14
+
+#### [NP-042] `pr-lint.yml` grants write permissions on push events
+Fixed: 2026-05-14
+Notes: Split the single `Lint` job into `LintPush` (push trigger, `contents: read` + `statuses: write` only) and `LintPR` (pull_request trigger, adds `issues: write` + `pull-requests: write`). Removed `packages: read` from both — not needed for linting. Each job only carries the permissions its event type requires.
+
+#### [NP-043] `_nvm_async_version_check` and `_nvm_async_manager_check` return cached value string, not PID
+Fixed: 2026-05-14
+Notes: Changed both cache-hit branches from `echo "$cached_result"; return 0` to `nvm_cache get ... >/dev/null 2>&1; return 0`. Cache hits now return empty (no output); callers guard with `test -n "$job_id"` before calling `_nvm_async_wait`. Updated `test_async_version_check` and `test_async_manager_check` in `test_async_helpers.fish` to handle both code paths correctly.
+
+#### [NP-044] `_nvm_async_wait` passes unvalidated `$job_id` to `kill -9` and uses it raw in regex
+Fixed: 2026-05-14
+Notes: Added numeric guard at entry of `_nvm_async_wait`: `if not string match -qr '^[0-9]+$' -- "$job_id"; return 1; end`. This rejects empty and non-numeric values before they reach `string match -qr "^$job_id\$"` (broken regex risk) or `kill -9 $job_id` (kill with garbage arg).
+
+#### [NP-045] `test_async_version_check` and `test_async_wait` swallow timeouts as non-failures
+Fixed: 2026-05-14
+Notes: Replaced `_nvm_async_wait ...; and echo "✅"/or echo "⚠️"` with `if not _nvm_async_wait ...; echo "❌ ..."; return 1/set failed 1; end` pattern in `test_async_version_check`, `test_async_manager_check`, and `test_async_wait`. Timeout is now a test failure, not a warning. Also ensured `rm -f async_test.nvmrc` always runs before any return in `test_async_version_check`.
+
+#### [NP-046] `test_async_cleanup` uses `sleep 2`, never exercises the reaping branch, leaks job
+Fixed: 2026-05-14
+Notes: Changed `sleep 2 &` to `sleep 0.1 &`. Added `kill $job_id 2>/dev/null; wait $job_id 2>/dev/null` after the cleanup call to prevent the job leaking into later tests.
+
+#### [NP-047] 14 test files use CWD-relative `source tests/test_runner.fish`
+Fixed: 2026-05-14
+Notes: Replaced `source tests/test_runner.fish` in all 14 unit and integration test files with `source (path normalize (dirname (status --current-filename))/../test_runner.fish)`. `path normalize` collapses the `..` before the path is stored as the source context filename — without normalization, Fish stores the path unnormalized and `dirname dirname` inside `setup_test_env` computes the wrong repo root, breaking the private helper source loop. All tests pass after fix.
 
 ### Pass 4 — 2026-05-14
 

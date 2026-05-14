@@ -1,7 +1,7 @@
 #!/usr/bin/env fish
 # Unit tests for nvm_auto_use helper functions
 
-source tests/test_runner.fish
+source (path normalize (dirname (status --current-filename))/../test_runner.fish)
 
 function test_select_manager
     echo "Testing _nvm_auto_use_select_manager..."

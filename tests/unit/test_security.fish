@@ -1,7 +1,7 @@
 #!/usr/bin/env fish
 # Unit tests for nvm_security.fish
 
-source tests/test_runner.fish
+source (path normalize (dirname (status --current-filename))/../test_runner.fish)
 
 function test_version_validation
     echo "Testing version validation..."

@@ -1,7 +1,7 @@
 #!/usr/bin/env fish
 # Unit tests for nvm_auto_use_config helper functions
 
-source tests/test_runner.fish
+source (path normalize (dirname (status --current-filename))/../test_runner.fish)
 
 function test_config_show
     echo "Testing _nvm_auto_use_config_show..."

@@ -1,7 +1,7 @@
 #!/usr/bin/env fish
 # Unit tests for nvm_doctor.fish
 
-source tests/test_runner.fish
+source (path normalize (dirname (status --current-filename))/../test_runner.fish)
 
 function test_doctor_dispatch
     echo "Testing nvm_doctor dispatch..."

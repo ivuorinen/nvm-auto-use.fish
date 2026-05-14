@@ -1,7 +1,7 @@
 #!/usr/bin/env fish
 # Unit tests for nvm_cache helper functions
 
-source tests/test_runner.fish
+source (path normalize (dirname (status --current-filename))/../test_runner.fish)
 
 function test_nvm_cache_get_set_delete
     echo "Testing _nvm_cache_set, _nvm_cache_get, and _nvm_cache_delete..."
