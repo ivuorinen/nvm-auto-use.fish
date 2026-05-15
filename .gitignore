@@ -22,3 +22,10 @@
 *~
 Session.vim
 Sessionx.vim
+.claude/settings.local.json
+
+# .claude/rules/ contains project-shared Claude Code rules — re-include
+# them so a global '**/.claude/*' ignore does not strip them from the repo.
+!.claude/
+!.claude/rules/
+!.claude/rules/**

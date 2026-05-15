@@ -1,0 +1,122 @@
+function nvm_cache -d "XDG-compliant cache management with TTL"
+    set -l action $argv[1]
+
+    switch $action
+        case get
+            # Usage: nvm_cache get <key> [ttl]
+            _nvm_cache_get $argv[2] $argv[3]
+        case set
+            # Usage: nvm_cache set <key> <value>
+            _nvm_cache_set $argv[2] $argv[3]
+        case delete
+            _nvm_cache_delete $argv[2]
+        case clear
+            _nvm_cache_clear
+        case stats
+            _nvm_cache_stats
+        case key
+            # Usage: nvm_cache key <file>
+            _nvm_cache_key $argv[2]
+        case manager_key
+            # Usage: nvm_cache manager_key <manager>
+            _nvm_cache_manager_key $argv[2]
+        case '*'
+            echo "Usage: nvm_cache [get|set|delete|clear|stats|key|manager_key] <key> [value-or-ttl]"
+            return 1
+    end
+end
+
+function _nvm_cache_dir -d "Get XDG cache directory for nvm-auto-use"
+    if set -q XDG_CACHE_HOME
+        echo "$XDG_CACHE_HOME/nvm-auto-use"
+    else
+        echo "$HOME/.cache/nvm-auto-use"
+    end
+end
+
+function _nvm_cache_get -d "Get cache value by key, respecting TTL"
+    set -l key $argv[1]
+    set -l ttl $argv[2]
+    set -l cache_dir (_nvm_cache_dir)
+    set -l cache_file "$cache_dir/$key"
+
+    if not test -f "$cache_file"
+        return 1
+    end
+
+    # Check TTL
+    set -l cache_time (stat -c %Y "$cache_file" 2>/dev/null; or stat -f %m "$cache_file" 2>/dev/null)
+    set -l current_time (date +%s)
+    set -l default_ttl 300 # 5 minutes default
+
+    if test -n "$ttl"
+        set default_ttl $ttl
+    end
+
+    # Use -ge so TTL=N means "fresh for less than N seconds" — at age N
+    # the entry is considered stale (consistent with HTTP max-age semantics
+    # and lets callers pass TTL=0 to force expiration in tests).
+    if test (math "$current_time - $cache_time") -ge $default_ttl
+        rm "$cache_file" 2>/dev/null
+        return 1
+    end
+
+    string collect <"$cache_file"
+    return 0
+end
+
+function _nvm_cache_set -d "Set cache value by key"
+    set -l key $argv[1]
+    set -l value $argv[2]
+    set -l cache_dir (_nvm_cache_dir)
+    set -l cache_file "$cache_dir/$key"
+
+    if test -z "$value"
+        return 1
+    end
+
+    mkdir -p "$cache_dir" 2>/dev/null
+    echo "$value" >"$cache_file" 2>/dev/null
+    return $status
+end
+
+function _nvm_cache_delete -d "Delete cache value by key"
+    set -l key $argv[1]
+    set -l cache_dir (_nvm_cache_dir)
+    set -l cache_file "$cache_dir/$key"
+    rm "$cache_file" 2>/dev/null
+    return 0
+end
+
+function _nvm_cache_clear -d "Clear all cache files"
+    set -l cache_dir (_nvm_cache_dir)
+    rm -rf "$cache_dir" 2>/dev/null
+    return 0
+end
+
+function _nvm_cache_stats -d "Show cache statistics"
+    set -l cache_dir (_nvm_cache_dir)
+    if test -d "$cache_dir"
+        echo "Cache directory: $cache_dir"
+        if command -q fd
+            echo "Cache files: "(count (fd --type f . "$cache_dir" 2>/dev/null))
+        else
+            echo "Cache files: "(count (find "$cache_dir" -type f 2>/dev/null))
+        end
+        echo "Cache size: "(du -sh "$cache_dir" 2>/dev/null | cut -f1)
+    else
+        echo "No cache directory found"
+    end
+    return 0
+end
+
+function _nvm_cache_key -d "Generate cache key from directory and file"
+    set -l dir_hash (_nvm_security_hash (pwd))
+    set -l file_hash (_nvm_security_hash "$argv[1]")
+    echo "dir_"$dir_hash"_"$file_hash
+end
+
+function _nvm_cache_manager_key -d "Generate cache key for manager availability"
+    set -l manager $argv[1]
+    echo "manager_$manager"
+end
