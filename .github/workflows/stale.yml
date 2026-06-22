@@ -18,4 +18,4 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: ivuorinen/actions/stale@877acc6d8b013051a6acf83c0e876d3a2b46210a # v2026.06.08
+      - uses: ivuorinen/actions/stale@8395dad6b7d5d7d2e1d016cac1eede33ab404a3c # v2026.06.18
