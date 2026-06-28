@@ -6,14 +6,14 @@ FISHER_URL := $(FISHER_BASE)/functions/fisher.fish
 
 # Tool versions (managed by Renovate via ivuorinen/renovate-config)
 # renovate: datasource=npm depName=markdownlint-cli
-MARKDOWNLINT_CLI_VERSION := 0.48.0
+MARKDOWNLINT_CLI_VERSION := 0.49.0
 # renovate: datasource=npm depName=jsonlint
 JSONLINT_VERSION := 1.6.3
 # renovate: datasource=npm depName=markdown-table-formatter
 MARKDOWN_TABLE_FORMATTER_VERSION := 1.7.0
 # editorconfig-checker-disable-next-line
 # renovate: datasource=github-releases depName=editorconfig-checker/editorconfig-checker
-EDITORCONFIG_CHECKER_VERSION := v3.6.1
+EDITORCONFIG_CHECKER_VERSION := v3.7.0
 
 .PHONY: all help install-tools lint lint-fish lint-markdown lint-md-tables \
 	lint-json lint-fix lint-check lint-editorconfig test test-ci \
