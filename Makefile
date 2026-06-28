@@ -13,7 +13,7 @@ JSONLINT_VERSION := 1.6.3
 MARKDOWN_TABLE_FORMATTER_VERSION := 1.7.0
 # editorconfig-checker-disable-next-line
 # renovate: datasource=github-releases depName=editorconfig-checker/editorconfig-checker
-EDITORCONFIG_CHECKER_VERSION := v3.7.0
+EDITORCONFIG_CHECKER_VERSION := v3.8.0
 
 .PHONY: all help install-tools lint lint-fish lint-markdown lint-md-tables \
 	lint-json lint-fix lint-check lint-editorconfig test test-ci \
