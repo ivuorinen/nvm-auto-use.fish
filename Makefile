@@ -6,7 +6,7 @@ FISHER_URL := $(FISHER_BASE)/functions/fisher.fish
 
 # Tool versions (managed by Renovate via ivuorinen/renovate-config)
 # renovate: datasource=npm depName=markdownlint-cli
-MARKDOWNLINT_CLI_VERSION := 0.49.0
+MARKDOWNLINT_CLI_VERSION := 0.49.1
 # renovate: datasource=npm depName=jsonlint
 JSONLINT_VERSION := 1.6.3
 # renovate: datasource=npm depName=markdown-table-formatter
