@@ -123,26 +123,39 @@ function test_async_operations
     set -l failed 0
 
     cd "$TEST_DIR"
+    # Start cold: a warm cache entry makes nvm_async return empty and every
+    # assertion below vacuous. The cache is XDG-persistent across runs.
+    nvm_cache clear
+
     # Create test version file
     echo "18.17.0" >async_test.nvmrc
+    set -l cache_key (nvm_cache key "async_test.nvmrc")
 
     # Test async version check
     set -l job_id (nvm_async version_check "async_test.nvmrc")
 
-    if test -n "$job_id"
-        echo "✅ Async version check started"
-
-        # Wait for completion
-        nvm_async wait "$job_id" 5
-        if test $status -eq 0
-            echo "✅ Async operation completed"
-        else
-            echo "⚠️  Async operation timed out"
-            set failed 1
-        end
-    else
-        echo "ℹ️  Async operation may have completed immediately"
+    if test -z "$job_id"
+        echo "❌ Async version check returned no job ID on a cold cache"
+        rm -f async_test.nvmrc
+        return 1
     end
+    echo "✅ Async version check started"
+
+    # Wait for completion
+    nvm_async wait "$job_id" 5
+    if test $status -eq 0
+        echo "✅ Async operation completed"
+    else
+        echo "⚠️  Async operation timed out"
+        set failed 1
+    end
+
+    # The job body runs in a `fish -c` subshell, which only sees functions it
+    # can autoload. Assert it produced a value rather than erroring silently
+    # and leaving the "completed" check above to pass on an empty result.
+    set -l cached (nvm_cache get "$cache_key" 60)
+    assert_equals "$cached" "18.17.0" "Async job cached the extracted version"
+    or set failed 1
 
     rm -f async_test.nvmrc
 

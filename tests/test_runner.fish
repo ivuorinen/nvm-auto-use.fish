@@ -154,17 +154,47 @@ end
 function setup_test_env -d "Set up test environment"
     # Create temporary test directory
     set -g TEST_DIR (mktemp -d)
-    set -l script_dir (dirname (status -f))
-    set -l repo_root (dirname $script_dir)
+    # Resolve to an absolute path before the `cd "$TEST_DIR"` below: `status -f`
+    # is relative when tests are invoked as `fish tests/unit/foo.fish`, which
+    # left a relative "./functions" in $fish_function_path that no longer
+    # resolved once the shell moved into the temp dir.
+    set -l script_dir (path dirname (path resolve (status -f)))
+    set -l repo_root (path dirname $script_dir)
 
-    # Make the project's functions autoload in tests (and in any
-    # `fish -c` subshells that inherit this environment variable).
-    # Also source each file so private `_nvm_*` helpers (which Fish
-    # autoload won't pick up) are available to tests.
-    if not contains "$repo_root/functions" $fish_function_path
-        set -gx fish_function_path "$repo_root/functions" $fish_function_path
+    # Fisher installs this plugin into $XDG_CONFIG_HOME/fish/functions, which
+    # every child `fish -c` autoloads from. Mirror that layout so background
+    # jobs spawned by nvm_async can resolve nvm_* functions.
+    #
+    # Exporting $fish_function_path instead does NOT work: fish joins list
+    # variables with spaces on export, and does not re-split this one on
+    # import, so the child receives the whole path list as a single bogus
+    # element and autoloads nothing.
+    #
+    # Only fish's own directory is replaced; every other entry is symlinked
+    # through to the real config, so tool managers that key off
+    # XDG_CONFIG_HOME (mise, asdf) still resolve the binaries the tests shell
+    # out to — `fd` and `jq` among them.
+    set -l real_config "$HOME/.config"
+    if set -q XDG_CONFIG_HOME; and test -n "$XDG_CONFIG_HOME"
+        set real_config "$XDG_CONFIG_HOME"
     end
+    set -gx XDG_CONFIG_HOME "$TEST_DIR/config"
+    mkdir -p "$XDG_CONFIG_HOME/fish/functions"
+    for entry in (find "$real_config" -maxdepth 1 -mindepth 1 2>/dev/null)
+        set -l name (path basename "$entry")
+        test "$name" = fish; and continue
+        ln -sfn "$entry" "$XDG_CONFIG_HOME/$name"
+    end
+
+    # Keep cache writes inside the temp dir. Tests call `nvm_cache clear`,
+    # which would otherwise wipe the developer's real ~/.cache/nvm-auto-use.
+    set -gx XDG_CACHE_HOME "$TEST_DIR/cache"
+    mkdir -p "$XDG_CACHE_HOME"
+
+    # Link each module for child-shell autoload, and source it so private
+    # `_nvm_*` helpers (which Fish autoload won't pick up) are available here.
     for f in "$repo_root"/functions/*.fish
+        ln -sf "$f" "$XDG_CONFIG_HOME/fish/functions/"(path basename "$f")
         source "$f"
     end
 
