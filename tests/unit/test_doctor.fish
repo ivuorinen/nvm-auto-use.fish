@@ -107,6 +107,30 @@ function test_doctor_subcommands_run
     return $failed
 end
 
+function test_doctor_old_cache_file_count
+    echo "Testing nvm_doctor reports the real count of stale cache files..."
+
+    # setup_test_env points XDG_CACHE_HOME at the temp dir.
+    set -l cache_dir "$XDG_CACHE_HOME/nvm-auto-use"
+    nvm_cache clear
+    mkdir -p "$cache_dir"
+
+    # -t takes POSIX [[CC]YY]MMDDhhmm and works on both GNU and BSD touch.
+    for name in stale_a stale_b stale_c
+        echo value >"$cache_dir/$name"
+        touch -t 202001010000 "$cache_dir/$name"
+    end
+
+    set -l output (_nvm_doctor_check_cache 2>&1 | string collect)
+
+    assert_contains "$output" "Found 3 cache files older than 7 days" \
+        "Stale cache file count reflects the actual number of files"
+    or return 1
+
+    nvm_cache clear
+    return 0
+end
+
 function main
     setup_test_env
 
@@ -114,6 +138,7 @@ function main
 
     test_doctor_dispatch; or set failed (math "$failed + 1")
     test_doctor_system_info; or set failed (math "$failed + 1")
+    test_doctor_old_cache_file_count; or set failed (math "$failed + 1")
     test_doctor_fix_dispatch; or set failed (math "$failed + 1")
     test_doctor_subcommands_run; or set failed (math "$failed + 1")
 
