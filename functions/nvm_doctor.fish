@@ -319,10 +319,13 @@ function _nvm_doctor_check_cache -d "Check cache status and health"
         # The previous `count (string split '\n' "$old_files")` always yielded 1:
         # quoting joins the list with spaces, and '\n' in single quotes is a
         # literal backslash-n that never matches.
-        set -l old_files (find "$cache_dir" -type f -mtime +7 2>/dev/null)
+        # -mtime truncates the age to whole days, so `+7` means "8 days or
+        # older" and silently skips the 7-to-8-day window. `+6` is the correct
+        # spelling of "7 days or older".
+        set -l old_files (find "$cache_dir" -type f -mtime +6 2>/dev/null)
         set -l old_count (count $old_files)
         if test $old_count -gt 0
-            echo "   ℹ️  Found $old_count cache files older than 7 days"
+            echo "   ℹ️  Found $old_count cache files 7 days or older"
         end
     else
         echo "   ℹ️  No cache directory found"

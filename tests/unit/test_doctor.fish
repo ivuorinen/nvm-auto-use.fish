@@ -123,9 +123,22 @@ function test_doctor_old_cache_file_count
 
     set -l output (_nvm_doctor_check_cache 2>&1 | string collect)
 
-    assert_contains "$output" "Found 3 cache files older than 7 days" \
+    assert_contains "$output" "Found 3 cache files 7 days or older" \
         "Stale cache file count reflects the actual number of files"
     or return 1
+
+    # Boundary: -mtime truncates, so `+7` would silently skip the 7-to-8-day
+    # window. A file aged 7.5 days must be counted. The ancient files above
+    # cannot detect this — they match either spelling.
+    # `touch -d <relative>` is GNU-only; skip the check where it is missing.
+    if touch -d "180 hours ago" "$cache_dir/boundary" 2>/dev/null
+        set -l boundary_output (_nvm_doctor_check_cache 2>&1 | string collect)
+        assert_contains "$boundary_output" "Found 4 cache files 7 days or older" \
+            "A cache file aged 7.5 days counts as 7 days or older"
+        or return 1
+    else
+        echo "ℹ️  Skipping 7-day boundary check (touch -d unavailable)"
+    end
 
     nvm_cache clear
     return 0
