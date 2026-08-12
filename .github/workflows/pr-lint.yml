@@ -6,26 +6,33 @@ permissions: {}
 # yamllint disable-line rule:truthy
 on:
   push:
+    branches: [main]
   pull_request:
-    branches: [master, main]
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   LintPush:
+    name: Lint on push
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      statuses: write
+      statuses: write # post commit status for lint result
     steps:
       - uses: ivuorinen/actions/pr-lint@de31e11dda6488eabe95e951ebb61c6d9d500865 # v2026.06.30
 
   LintPR:
+    name: Lint on pull request
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      statuses: write
-      issues: write
-      pull-requests: write
+      statuses: write # post commit status for lint result
+      issues: write # add label/comment on lint failure
+      pull-requests: write # add review comment on lint failure
     steps:
       - uses: ivuorinen/actions/pr-lint@de31e11dda6488eabe95e951ebb61c6d9d500865 # v2026.06.30

@@ -98,11 +98,10 @@ function _nvm_cache_stats -d "Show cache statistics"
     set -l cache_dir (_nvm_cache_dir)
     if test -d "$cache_dir"
         echo "Cache directory: $cache_dir"
-        if command -q fd
-            echo "Cache files: "(count (fd --type f . "$cache_dir" 2>/dev/null))
-        else
-            echo "Cache files: "(count (find "$cache_dir" -type f 2>/dev/null))
-        end
+        # `find` only, never `fd`: `command -q fd` is satisfied by a mise/asdf
+        # shim with no version selected, which then prints nothing and yields a
+        # silent "0 files". This is a diagnostics path, so `find` is fast enough.
+        echo "Cache files: "(count (find "$cache_dir" -type f 2>/dev/null))
         echo "Cache size: "(du -sh "$cache_dir" 2>/dev/null | cut -f1)
     else
         echo "No cache directory found"

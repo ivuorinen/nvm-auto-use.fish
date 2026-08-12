@@ -66,6 +66,34 @@ function test_cache_stats
     return 0
 end
 
+function test_cache_stats_with_broken_fd
+    echo "Testing cache stats with a broken fd shim on PATH..."
+
+    # A mise/asdf shim with no version selected satisfies `command -q fd` but
+    # prints nothing and exits non-zero. Counting via fd then silently reported
+    # zero files. Guard the file count against any reintroduction of fd.
+    set -l shim_dir "$TEST_DIR/brokenbin"
+    mkdir -p "$shim_dir"
+    printf '#!/bin/sh\necho "mise ERROR No version is set for shim: fd" >&2\nexit 1\n' >"$shim_dir/fd"
+    chmod +x "$shim_dir/fd"
+
+    set -l saved_path $PATH
+    set -gx PATH "$shim_dir" $PATH
+
+    nvm_cache clear
+    nvm_cache set broken_fd_key1 value1
+    nvm_cache set broken_fd_key2 value2
+
+    set -l stats (nvm_cache stats)
+
+    set -gx PATH $saved_path
+
+    assert_contains "$stats" "Cache files: 2" "Cache stats counts files without depending on fd"
+    or return 1
+
+    return 0
+end
+
 function test_cache_key_generation
     echo "Testing cache key generation..."
 
@@ -91,6 +119,7 @@ function main
     test_cache_basic_operations; or set failed (math "$failed + 1")
     test_cache_ttl; or set failed (math "$failed + 1")
     test_cache_stats; or set failed (math "$failed + 1")
+    test_cache_stats_with_broken_fd; or set failed (math "$failed + 1")
     test_cache_key_generation; or set failed (math "$failed + 1")
 
     cleanup_test_env

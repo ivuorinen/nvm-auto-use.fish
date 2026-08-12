@@ -7,15 +7,18 @@ permissions: {}
 on:
   schedule:
     - cron: "0 8 * * *"
-  workflow_call:
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   stale:
+    name: Mark stale issues and PRs
     runs-on: ubuntu-latest
     permissions:
-      contents: write # only for delete-branch option
-      issues: write
-      pull-requests: write
+      issues: write # close and label stale issues
+      pull-requests: write # close and label stale pull requests
     steps:
       - uses: ivuorinen/actions/stale@de31e11dda6488eabe95e951ebb61c6d9d500865 # v2026.06.30

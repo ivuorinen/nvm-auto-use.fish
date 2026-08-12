@@ -303,12 +303,8 @@ function _nvm_doctor_check_cache -d "Check cache status and health"
     end
 
     if test -d "$cache_dir"
-        set -l cache_files
-        if command -q fd
-            set cache_files (fd --type f . "$cache_dir" 2>/dev/null)
-        else
-            set cache_files (find "$cache_dir" -type f 2>/dev/null)
-        end
+        # `find` only, never `fd` — see the note in _nvm_cache_stats.
+        set -l cache_files (find "$cache_dir" -type f 2>/dev/null)
 
         for cache_file in $cache_files
             if test -s "$cache_file"
@@ -319,14 +315,17 @@ function _nvm_doctor_check_cache -d "Check cache status and health"
         end
 
         # Check for very old cache files
-        set -l old_files
-        if command -q fd
-            set old_files (fd --type f --changed-before 7days . "$cache_dir" 2>/dev/null)
-        else
-            set old_files (find "$cache_dir" -type f -mtime +7 2>/dev/null)
-        end
-        if test -n "$old_files"
-            echo "   ℹ️  Found "(count (string split '\n' "$old_files"))" cache files older than 7 days"
+        # `find` already returns one element per file; counting it directly.
+        # The previous `count (string split '\n' "$old_files")` always yielded 1:
+        # quoting joins the list with spaces, and '\n' in single quotes is a
+        # literal backslash-n that never matches.
+        # -mtime truncates the age to whole days, so `+7` means "8 days or
+        # older" and silently skips the 7-to-8-day window. `+6` is the correct
+        # spelling of "7 days or older".
+        set -l old_files (find "$cache_dir" -type f -mtime +6 2>/dev/null)
+        set -l old_count (count $old_files)
+        if test $old_count -gt 0
+            echo "   ℹ️  Found $old_count cache files 7 days or older"
         end
     else
         echo "   ℹ️  No cache directory found"
@@ -353,12 +352,7 @@ function _nvm_doctor_performance_check -d "Analyze performance issues"
     end
 
     if test -d "$cache_dir"
-        set -l cache_count
-        if command -q fd
-            set cache_count (count (fd --type f . "$cache_dir" 2>/dev/null))
-        else
-            set cache_count (count (find "$cache_dir" -type f 2>/dev/null))
-        end
+        set -l cache_count (count (find "$cache_dir" -type f 2>/dev/null))
         if test $cache_count -gt 100
             echo "   ⚠️  Large number of cache files ($cache_count) - consider cleanup"
             set issues (math "$issues + 1")

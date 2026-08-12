@@ -41,6 +41,17 @@ trap 'rm -rf "$TMPDIR"' EXIT
 
 curl -fsSL "$URL" | tar -xz -C "$TMPDIR"
 
+# The release archive ships the binary arch-suffixed as bin/ec-<os>-<arch>
+# (e.g. bin/ec-linux-amd64), never a plain bin/ec — verified against v3.8.0
+# and v3.10.0. Locate it rather than hardcoding a name, and fail loudly if the
+# layout changes again instead of letting `mv` fail into a confusing
+# "command not found" later.
+EC_BINARY="$(find "$TMPDIR/bin" -maxdepth 1 -type f -name 'ec*' | head -n 1)"
+if [ -z "$EC_BINARY" ]; then
+  echo "Could not find editorconfig-checker binary in archive"
+  exit 1
+fi
+
 # Choose install directory — attempt to create the XDG/home dir first so a
 # fresh environment doesn't fall back to /usr/local/bin unnecessarily.
 INSTALL_DIR="${XDG_BIN_HOME:-$HOME/bin}"
@@ -52,14 +63,14 @@ fi
 
 echo "Installing to $INSTALL_DIR..."
 
-if mv "$TMPDIR/bin/ec" "$INSTALL_DIR/editorconfig-checker" 2>/dev/null; then
+if mv "$EC_BINARY" "$INSTALL_DIR/editorconfig-checker" 2>/dev/null; then
   echo "✓ Installed editorconfig-checker to $INSTALL_DIR"
-elif sudo mv "$TMPDIR/bin/ec" "$INSTALL_DIR/editorconfig-checker" 2>/dev/null; then
+elif sudo mv "$EC_BINARY" "$INSTALL_DIR/editorconfig-checker" 2>/dev/null; then
   echo "✓ Installed editorconfig-checker to $INSTALL_DIR (with sudo)"
 else
   echo "Could not install to $INSTALL_DIR, using local copy"
   mkdir -p bin
-  mv "$TMPDIR/bin/ec" bin/editorconfig-checker
+  mv "$EC_BINARY" bin/editorconfig-checker
   echo "Add $(pwd)/bin to your PATH to use editorconfig-checker"
 fi
 
