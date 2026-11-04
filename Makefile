@@ -10,7 +10,7 @@ MARKDOWNLINT_CLI_VERSION := 0.50.0
 # renovate: datasource=npm depName=jsonlint
 JSONLINT_VERSION := 1.6.3
 # renovate: datasource=npm depName=markdown-table-formatter
-MARKDOWN_TABLE_FORMATTER_VERSION := 1.7.0
+MARKDOWN_TABLE_FORMATTER_VERSION := 2.1.0
 # editorconfig-checker-disable-next-line
 # renovate: datasource=github-releases depName=editorconfig-checker/editorconfig-checker
 EDITORCONFIG_CHECKER_VERSION := v3.11.3
